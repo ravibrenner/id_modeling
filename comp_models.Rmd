@@ -1,0 +1,339 @@
+---
+title: "Compartmental models"
+author: "Ravi Brenner"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+Notes and code following chapter 2 of Modeling Infectious Diseases in Humans and Animals by Matt J. Keeling and Pejman Rohani.
+
+```{r}
+library(tidyverse)
+library(deSolve)
+```
+
+## SIR model without demography
+Basic model
+
+$\frac{dS}{dt} = -\beta SI $
+
+$\frac{dI}{dt} = \beta SI  - \gamma I$
+
+$\frac{dR}{dt} = \gamma I$
+
+beta here is the contact rate between individuals
+
+gamma is the recovery rate, and 1/gamma is the average infectious period
+
+R0 is beta / gamma
+
+Note that S + I + R must = 1
+```{r}
+sirmod <- function(t, state, params){
+  # pull listed inputs into environment as names variables
+  with(as.list(c(state,params)),{
+    # define equations
+      dS = -beta * S * I 
+      dI = beta*S*I - gamma*I
+      dR = gamma * I
+      
+      list(c(dS,dI,dR))
+  })
+}
+
+times = seq(0,100, by=1) #100 days, in discrete units
+state = c(S = 0.999, I = 0.001, R = 0) # initial state values
+params = c(beta = 2, gamma = 1/2, N = 1) # parameters
+
+sir_out <- ode(y = state, t = times, func = sirmod, parms = params) |> 
+  as_tibble()
+```
+
+plot model
+```{r}
+sir_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = I),color = "red") + 
+  geom_line(aes(y = R),color = "blue")
+```
+
+Final epidemic size
+```{r}
+final_size = rootSolve::runsteady(y=state,times=c(0,100), func=sirmod, parms=params)
+final_size$y
+
+#alternatively...assuming time is long enough
+sir_out[nrow(sir_out),]
+```
+
+
+## SIR model with demography
+Add in a mortality rate $\mu$, with average lifespan equal to $1/\mu$.
+
+Here, we are also assuming that $\mu$ is the population's birth rate (hence the positive $\mu$ in the dS equation)
+
+$\frac{dS}{dt} = \mu -\beta SI  - \mu S$
+
+$\frac{dI}{dt} = \beta SI  - \gamma I - \mu I$
+
+$\frac{dR}{dt} = \gamma I - \mu R$
+
+R0 here is beta / (gamma + mu)
+
+Note S + I + R here must still be =1
+```{r}
+sir_demo_mod <- function(t, state, params){
+  # pull listed inputs into environment as names variables
+  with(as.list(c(state,params)),{
+    # define equations
+      dS = mu -(beta * S * I ) - mu*S
+      dI = (beta*S*I) - gamma*I - mu * I
+      dR = gamma * I - mu*R
+      
+      # dead = mu*S + mu*I + mu*R
+      # born = mu*N
+      
+      list(c(dS,dI,dR))
+  })
+}
+
+times = seq(0,100, by=1) #100 days, in discrete units
+state = c(S = 0.999, I = 0.001, R = 0) # initial state values
+params = c(beta = 2, gamma = 1/2, mu = 0.0001, N = 1) # parameters
+
+sir_demo_out <- ode(y = state, t = times, func = sir_demo_mod, parms = params) |> 
+  as_tibble()
+```
+
+plot model
+```{r}
+sir_demo_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = I),color = "red") + 
+  geom_line(aes(y = R),color = "blue")
+```
+
+What happens at equilibrium when dS = dI = dR = 0?
+
+There is a disease free equilibrium when S = 1, I = R = 0.
+
+In endemic equilibrium, we find S* = (gamma + mu) / beta = 1/R0
+
+Can plug that in to find that $I^* = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$
+
+(R* is just 1-S* -I* here)
+
+This requires R0 > 1 for endemic equilibrium, otherwise the disease-free equilibrium will hold.
+
+```{r}
+final_size = rootSolve::runsteady(y=state,times=c(0,10000), func=sir_demo_mod, parms=params)
+final_size$y
+
+r0 <- params["beta"] / (params["gamma"] + params["mu"])
+I_star = (params["mu"] / params["beta"]) * (r0-1)
+r0
+I_star
+```
+
+
+Average age of infection
+
+$A \approx \frac{1}{\mu(R_0-1)}$ (from dS equation). This is basically the inverse of the average period spent in susceptible class, which is approximated by the inverse of the force of infection, $1/\beta I^*$, subbing in I* from above.
+
+Can rewrite this as $R_0 -1 \approx L/A$ with L=lifespan = 1/mu
+
+```{r}
+age_infex <- 1/(params["mu"]*(r0-1))
+age_infex / 365
+```
+
+
+
+## SI models - infection induced mortality
+
+There are multiple possibilities here, and things start to get more complex.
+
+Mainly, consider probability $\rho$ of an infected individual dying from infection before recovering or dying from other causes.
+
+This changes the dI equation to:
+
+$\frac{dI}{dt} = \beta SI  - (\gamma +\mu)I - \frac{\rho}{1-\rho}(\gamma + \mu) I$
+
+With the new term thought of as the per capita disease induced morality rate. We can rearrange this equation a bit:
+
+$\frac{dI}{dt} = \beta SI   - \frac{\gamma + \mu}{1-\rho} I$
+
+Note that as $\rho$ goes to 1, R0 drops to 0 (because new infections die almost immediately).
+
+### Density dependent transmission
+Up to now, we have been assuming S, I, and R are proportions and N = 1. Bus as N changes, the dynamics change too.
+
+Note that we can no longer assume population size is fixed. A solution to this is to incorporate a fixed birth rate $\nu$ into the dS equation.
+
+S->X
+I->Y
+R->Z
+
+$\frac{dX}{dt} = \nu -\beta XY  - \mu X$
+
+$\frac{dY}{dt} = \beta XY   - \frac{\gamma + \mu}{1-\rho} Y$
+
+$\frac{dZ}{dt} = \gamma Y - \mu Z$
+
+
+But since N can now vary, neet to consider $\beta XY$ in more detail.
+
+$\frac{dN}{dt} = \nu - \mu N$, setting = 0 if no disease then $N = \nu/\mu$, the carrying capacity for the population. (disease free equilibrium solution for S*)
+
+Now, taking into account a correction for reduced infectivity due to disease induced mortality, and a tern for the population size, $R_0 = \frac{\beta(1-\rho)\nu}{(\mu + \gamma)\mu}$
+
+note now the endemic equilibrium:
+
+$X^* = \frac{\mu + \gamma}{\beta(1-\rho)} = \frac{\nu}{\mu R_0}$
+
+$Y^* = \frac{\mu}{\beta}(R_0-1)$
+
+$Z^* = \frac{\gamma}{\beta}(R_0-1)$
+
+$N^* = \frac{\nu}{\mu R_0}[1+(1-\rho)(R_0-1)]$
+
+(Skipping over the frequency dependent version here, for simplicity). The takeaway here is as follows:
+
+When disease-induced mortality is added to the SIR model with density-dependent transmission, the equilibrium and stability properties simply reflect a change in parameters.
+
+When disease-induced mortality is added to the SIR model with frequency dependent transmission, the equilibrium and stability properties can change substantially, especially if the probability of mortality is high.
+
+### Mortality late in infection
+$\frac{dS}{dt} = \nu -\beta SI  -\mu S$
+
+$\frac{dI}{dt} = \beta SI  - (\gamma+\mu) I$
+
+$\frac{dR}{dt} = (1-\rho)\gamma I - \mu R$
+
+Here, rho is the probability of an infected individual dying from the disease. Basically, they spend the entive infectious period in the I class, and then instead of moving to recovery, they are just removed from the R class as a death.
+
+## SIS model (no immunity)
+
+$\frac{dS}{dt} = \gamma I -\beta SI $
+
+$\frac{dI}{dt} = \beta SI  - \gamma I $
+
+S + I = 1
+
+Can actually solve these to find that 
+
+$I^* = (1-1/R_0)$
+
+$S^* = 1/R_0$
+
+$R_0 = \beta/\gamma$
+
+As the equilibrium. Basically this means that for a disease that does not lead to long-term immunity, the disease will persis long term in the population if R0 > 1. Basically it will become endemic at a level determined by R0.
+
+```{r}
+sis_mod <- function(t, state, params){
+  # pull listed inputs into environment as names variables
+  with(as.list(c(state,params)),{
+    # define equations
+      dS = -(beta * S * I ) +gamma*I
+      dI = (beta*S*I) - gamma*I 
+
+      
+      list(c(dS,dI))
+  })
+}
+
+times = seq(0,100, by=1) #100 days, in discrete units
+state = c(S = 0.999, I = 0.001) # initial state values
+params = c(beta = 2, gamma = 1/2, N = 1) # parameters
+
+sis_mod_out <- ode(y = state, t = times, func = sis_mod, parms = params) |> 
+  as_tibble()
+
+sis_mod_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = I),color = "red")
+```
+
+## SIRS model - waning immunity
+
+$\frac{dS}{dt} = \mu +\omega R -\beta SI  -\mu S$
+
+$\frac{dI}{dt} = \beta SI  - (\gamma+\mu) I$
+
+$\frac{dR}{dt} = \gamma I - \omega R -  \mu R$
+
+Where $\omega$ is the rate at which immunity is lost and individuals go from R-->S. Similar to before, $R_0 = \beta /(\gamma + \mu)$
+
+
+```{r}
+sirs_mod <- function(t, state, params){
+  # pull listed inputs into environment as names variables
+  with(as.list(c(state,params)),{
+    # define equations
+      dS = mu -omega * R -(beta * S * I ) -mu*S
+      dI = (beta*S*I) - (gamma+mu)*I 
+      dR = gamma*I - omega*R - mu*R
+      
+      list(c(dS,dI,dR))
+  })
+}
+
+times = seq(0,100, by=1) #100 days, in discrete units
+state = c(S = 0.999, I = 0.001, R = 0) # initial state values
+params = c(beta = 0.75, gamma = 1/2, N = 1, mu = 1/(70*12), omega = 1/(12*1)) # parameters
+
+sirs_mod_out <- ode(y = state, t = times, func = sirs_mod, parms = params) |> 
+  as_tibble()
+
+sirs_mod_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = I),color = "red") + 
+  geom_line(aes(y = R),color = "blue")
+```
+
+## SEIR model - latent period
+
+$\frac{dS}{dt} = \mu -\beta SI  -\mu S$
+
+$\frac{dE}{dt} = \beta SI  -(\mu + \sigma) S$
+
+$\frac{dI}{dt} = \sigma E - (\gamma+\mu) I$
+
+$\frac{dR}{dt} = \gamma I -  \mu R$
+
+The latent period (time spent infected but not infectious) is equal to 1/sigma.
+
+And assume S + E + I + R = 1 (closed cohort).
+
+This gives
+
+$R_0 = \frac{\beta}{\mu+\gamma} \frac{\sigma}{\mu+\sigma}$
+
+Basically, it's the same R0 as the SIR model, but some individuals in E die before reaching I, so they do not contribute to transmission. Usually, the second fraction is ~1 (since mu is very small compared to sigma--people's lifespan (in years) is usually longer than the time spend in latent period (often days or weeks)).
+
+Although the SIR and SEIR models behave similarly at equilibrium (when the parameters are suitably rescaled), the SEIR model has a slower growth rate after pathogen invasion due to individuals needing to pass through the exposed class before they can contribute to the transmission process.
+
+
+## carrier state
+
+## discrete time models
+
+## estimating parameters
+
+## Putting it all together
+
+S E I R C D N 
+Births/deaths
+Deaths late in infection
+
+
