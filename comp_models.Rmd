@@ -17,8 +17,15 @@ library(tidyverse)
 library(deSolve)
 ```
 
-## SIR model without demography
-Basic model
+## Building up compartmental models
+
+Unfortunately, this chapter jumps right in to some confusing terminology and derivations. I will deal with each of these issues in turn.
+
+### Model structure
+
+Basically, capital letters are used to represent different compartments, and differential equations are solved to get deterministic solutions. In the most intuitive (and famous) SIR model, S = Susceptible, I = Infected/Infectious, and R = Recovered. For a closed population of size N, we assume S + I + R = N. People move from S to I and from I to R, and that's it. How fast people move from S to I depends on how many people are in S and I.
+
+The model equations look like this (we will derive these next):
 
 $\frac{dS}{dt} = -\beta SI $
 
@@ -26,14 +33,91 @@ $\frac{dI}{dt} = \beta SI  - \gamma I$
 
 $\frac{dR}{dt} = \gamma I$
 
-beta here is the contact rate between individuals
+### Deriving the parameters
 
-gamma is the recovery rate, and 1/gamma is the average infectious period
+So for the SIR model, there are 2 terms to worry about:
 
-R0 is beta / gamma
+1.  The S-->I "transmission" term
+
+2.  the I-->R recovery term
+
+(note that R is just 1 - S - I)
+
+(2) is actually fairly straightforward. If someone is infectious for *t* period of time, then their time spend infectious is equal to $1/t = \gamma$. We call $\gamma$ the recovery rate.
+
+(1) is more complicated, but it works like this. The rate that people get infected depends on the number of contacts between susceptible and infectious people, and the per-person probability of acquiring infection, given contact (this is often called the force of infection, $\lambda$). Here's where it gets complicated.
+
+#### Density dependent and frequency dependent transmission
+
+I found Keeling and Rohani's explanation of this very confusing. But [this](https://parasiteecology.wordpress.com/2013/10/17/density-dependent-vs-frequency-dependent-disease-transmission/) blog post was very helpful in helping me understand.
+
+In density-dependent (DD) transmission, the contact rate between S and I depends on the density within the physical space. Think of a crowded subway car and a respiratory disease.
+
+In frequency dependent (FD) transmission, the contact rate does not depend on population density. Think of a crowded subway car and an STI. One is not more likely to contract an STI on a subway car if it is full of more or less people.
+
+The transmission terms look like this:
+
+$DD: \frac{dI}{dt} = \lambda S$
+
+$FD: \frac{dI}{dt} = \lambda' S$
+
+And those $\lambda$ values look like this:
+
+$DD: \lambda = c * v * I/N$
+
+$FD: \lambda' = c' * v * I/N$
+
+So lambda, the force of infection, is the product of 1) the probability/rate that a contact happens between individuals (c or c'), 2) the probability/rate that one of those contacts is infected (I/N), and 3) the probability/rate that a contact between an S and an I individual results in transmission (v). You can see that the only thing that changes is c/c', the probability/rate that people come into contact (think of the subway example again).
+
+In DD, that contact rate will increase as some function of the density (people/area, or N/A) of people in the space. So we can say that $c = k * N/A$. In theory this could be nonlinear too.
+
+In FD, that contact rate will be constant, so $c'=k$.
+
+Putting this together, we get
+
+$DD: \frac{dI}{dt} = cv\frac{I}{N}S = k\frac{N}{A}v\frac{I}{N}S = k\frac{1}{A}vIS$
+
+$FD: \frac{dI}{dt} = c'v\frac{I}{N}S = kv\frac{I}{N}S$
+
+If we take A to be a constant (which can be an OK assumption if we're modeling a consistent area over time), we can combine all constant terms into one:
+
+
+$DD: \frac{dI}{dt} = \beta SI$
+
+$FD: \frac{dI}{dt} = \beta' SI/N$
+
+There are some more possible complications here, but this is good for now. 
+
+One note is that K&R use S, I, and R to represent proportions, and X, Y, and Z to represent the numbers of people in each compartment. In fact in their terminology we should really have these terms:
+
+$DD: \frac{dY}{dt} = \beta XY$
+
+$FD: \frac{dY}{dt} = \beta' XY/N = \beta SI$
+
+This may seem like overkill detail, but these details become important when population size changes (e.g. with birth and death or migration) or if we are trying to model something across a range of population sizes.
+
+## SIR model without demography
+
+Returning to the basic model (note this is FD). The full terms are:
+
+$\frac{dS}{dt} = -\beta SI $
+
+$\frac{dI}{dt} = \beta SI  - \gamma I$
+
+$\frac{dR}{dt} = \gamma I$
+
+$\beta$ here is the number of people infected per unit time per infected person.
+
+$\gamma$ is the recovery rate, and $1/\gamma$ is the average infectious period.
 
 Note that S + I + R must = 1
-```{r}
+
+If we focus on $\frac{dI}{dt} = I (\beta S  - \gamma)$, some interesting things pop out. If $S(0) < \frac{\gamma}{\beta}$, dI/dt is < 0 and infection "dies out." Another way of thinking about this is that if $S(0) > \frac{\gamma}{\beta}$, the infection will grow. We can think of $\frac{\gamma}{\beta}$ as the removal rate from the infectious compartment. The inverse is called the basic reproductive ratio, $R_0 = \frac{\beta}{\gamma}$ ("R naught" or "R not"), defined as the average number of secondary cases arising from an average primary case in an entirely susceptible population. 
+
+In a closed population, a disease can only grow if the fraction of susceptibles S is greater than $1/R_0$.
+
+We can create this model in R:
+```{r sir_model}
 sirmod <- function(t, state, params){
   # pull listed inputs into environment as names variables
   with(as.list(c(state,params)),{
@@ -46,15 +130,19 @@ sirmod <- function(t, state, params){
   })
 }
 
-times = seq(0,100, by=1) #100 days, in discrete units
+times = seq(0,26, by=1/10) #26 weeks, in discrete units
 state = c(S = 0.999, I = 0.001, R = 0) # initial state values
 params = c(beta = 2, gamma = 1/2, N = 1) # parameters
+# beta = 1 means each infected can infect 1 people per week
+# gamma = 1/2 means the infectious period is 2 weeks
 
 sir_out <- ode(y = state, t = times, func = sirmod, parms = params) |> 
-  as_tibble()
+  as_tibble() |>
+  mutate(across(everything(), as.numeric))
 ```
 
-plot model
+Plot model
+
 ```{r}
 sir_out |>
   ggplot(aes(x = time)) + 
@@ -64,6 +152,7 @@ sir_out |>
 ```
 
 Final epidemic size
+
 ```{r}
 final_size = rootSolve::runsteady(y=state,times=c(0,100), func=sirmod, parms=params)
 final_size$y
@@ -72,8 +161,16 @@ final_size$y
 sir_out[nrow(sir_out),]
 ```
 
+### Epidemic Burnout
+
+Some interesting math here, but the point to flag is:
+
+The chain of transmission eventually breaks due to the decline in infectives, not due to a complete lack of susceptibles.
+
+In fact, there will (almost always) remain some proportion of susceptibles who are uninfected at the end.
 
 ## SIR model with demography
+
 Add in a mortality rate $\mu$, with average lifespan equal to $1/\mu$.
 
 Here, we are also assuming that $\mu$ is the population's birth rate (hence the positive $\mu$ in the dS equation)
@@ -84,9 +181,10 @@ $\frac{dI}{dt} = \beta SI  - \gamma I - \mu I$
 
 $\frac{dR}{dt} = \gamma I - \mu R$
 
-R0 here is beta / (gamma + mu)
+We again rearrange $\frac{dI}{dt} = I(\beta S  - (\gamma + \mu))$, to find that $R_0 = \frac{\beta}{\gamma + \mu}$
 
-Note S + I + R here must still be =1
+Note S + I + R here must still be = 1
+
 ```{r}
 sir_demo_mod <- function(t, state, params){
   # pull listed inputs into environment as names variables
@@ -103,15 +201,18 @@ sir_demo_mod <- function(t, state, params){
   })
 }
 
-times = seq(0,100, by=1) #100 days, in discrete units
+times = seq(0,26, by=1/10) 
 state = c(S = 0.999, I = 0.001, R = 0) # initial state values
-params = c(beta = 2, gamma = 1/2, mu = 0.0001, N = 1) # parameters
+params = c(beta = 2, gamma = 1/2, mu = 0.0003, N = 1) # parameters
 
 sir_demo_out <- ode(y = state, t = times, func = sir_demo_mod, parms = params) |> 
-  as_tibble()
+  as_tibble() |>
+  mutate(across(everything(), as.numeric))
+
 ```
 
 plot model
+
 ```{r}
 sir_demo_out |>
   ggplot(aes(x = time)) + 
@@ -119,33 +220,32 @@ sir_demo_out |>
   geom_line(aes(y = I),color = "red") + 
   geom_line(aes(y = R),color = "blue")
 ```
+### Endemic equilibrium
 
 What happens at equilibrium when dS = dI = dR = 0?
 
 There is a disease free equilibrium when S = 1, I = R = 0.
 
-In endemic equilibrium, we find S* = (gamma + mu) / beta = 1/R0
+In endemic equilibrium, we find S\* = (gamma + mu) / beta = 1/R0
 
 Can plug that in to find that $I^* = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$
 
-(R* is just 1-S* -I* here)
+(R\* is just 1-S\* -I\* here)
 
-This requires R0 > 1 for endemic equilibrium, otherwise the disease-free equilibrium will hold.
+This requires R0 \> 1 for endemic equilibrium, otherwise the disease-free equilibrium will hold.
 
 ```{r}
-final_size = rootSolve::runsteady(y=state,times=c(0,10000), func=sir_demo_mod, parms=params)
-final_size$y
-
 r0 <- params["beta"] / (params["gamma"] + params["mu"])
 I_star = (params["mu"] / params["beta"]) * (r0-1)
 r0
 I_star
 ```
 
+### Oscillations
 
-Average age of infection
+### Average age of infection
 
-$A \approx \frac{1}{\mu(R_0-1)}$ (from dS equation). This is basically the inverse of the average period spent in susceptible class, which is approximated by the inverse of the force of infection, $1/\beta I^*$, subbing in I* from above.
+$A \approx \frac{1}{\mu(R_0-1)}$ (from dS equation). This is basically the inverse of the average period spent in susceptible class, which is approximated by the inverse of the force of infection, $1/\beta I^*$, subbing in I\* from above.
 
 Can rewrite this as $R_0 -1 \approx L/A$ with L=lifespan = 1/mu
 
@@ -153,8 +253,6 @@ Can rewrite this as $R_0 -1 \approx L/A$ with L=lifespan = 1/mu
 age_infex <- 1/(params["mu"]*(r0-1))
 age_infex / 365
 ```
-
-
 
 ## SI models - infection induced mortality
 
@@ -173,13 +271,12 @@ $\frac{dI}{dt} = \beta SI   - \frac{\gamma + \mu}{1-\rho} I$
 Note that as $\rho$ goes to 1, R0 drops to 0 (because new infections die almost immediately).
 
 ### Density dependent transmission
+
 Up to now, we have been assuming S, I, and R are proportions and N = 1. Bus as N changes, the dynamics change too.
 
 Note that we can no longer assume population size is fixed. A solution to this is to incorporate a fixed birth rate $\nu$ into the dS equation.
 
-S->X
-I->Y
-R->Z
+S-\>X I-\>Y R-\>Z
 
 $\frac{dX}{dt} = \nu -\beta XY  - \mu X$
 
@@ -187,10 +284,9 @@ $\frac{dY}{dt} = \beta XY   - \frac{\gamma + \mu}{1-\rho} Y$
 
 $\frac{dZ}{dt} = \gamma Y - \mu Z$
 
-
 But since N can now vary, neet to consider $\beta XY$ in more detail.
 
-$\frac{dN}{dt} = \nu - \mu N$, setting = 0 if no disease then $N = \nu/\mu$, the carrying capacity for the population. (disease free equilibrium solution for S*)
+$\frac{dN}{dt} = \nu - \mu N$, setting = 0 if no disease then $N = \nu/\mu$, the carrying capacity for the population. (disease free equilibrium solution for S\*)
 
 Now, taking into account a correction for reduced infectivity due to disease induced mortality, and a tern for the population size, $R_0 = \frac{\beta(1-\rho)\nu}{(\mu + \gamma)\mu}$
 
@@ -211,6 +307,7 @@ When disease-induced mortality is added to the SIR model with density-dependent 
 When disease-induced mortality is added to the SIR model with frequency dependent transmission, the equilibrium and stability properties can change substantially, especially if the probability of mortality is high.
 
 ### Mortality late in infection
+
 $\frac{dS}{dt} = \nu -\beta SI  -\mu S$
 
 $\frac{dI}{dt} = \beta SI  - (\gamma+\mu) I$
@@ -221,13 +318,13 @@ Here, rho is the probability of an infected individual dying from the disease. B
 
 ## SIS model (no immunity)
 
-$\frac{dS}{dt} = \gamma I -\beta SI $
+\$\frac{dS}{dt} = \gamma I -\beta SI \$
 
-$\frac{dI}{dt} = \beta SI  - \gamma I $
+\$\frac{dI}{dt} = \beta SI - \gamma I \$
 
 S + I = 1
 
-Can actually solve these to find that 
+Can actually solve these to find that
 
 $I^* = (1-1/R_0)$
 
@@ -235,7 +332,7 @@ $S^* = 1/R_0$
 
 $R_0 = \beta/\gamma$
 
-As the equilibrium. Basically this means that for a disease that does not lead to long-term immunity, the disease will persis long term in the population if R0 > 1. Basically it will become endemic at a level determined by R0.
+As the equilibrium. Basically this means that for a disease that does not lead to long-term immunity, the disease will persis long term in the population if R0 \> 1. Basically it will become endemic at a level determined by R0.
 
 ```{r}
 sis_mod <- function(t, state, params){
@@ -271,8 +368,7 @@ $\frac{dI}{dt} = \beta SI  - (\gamma+\mu) I$
 
 $\frac{dR}{dt} = \gamma I - \omega R -  \mu R$
 
-Where $\omega$ is the rate at which immunity is lost and individuals go from R-->S. Similar to before, $R_0 = \beta /(\gamma + \mu)$
-
+Where $\omega$ is the rate at which immunity is lost and individuals go from R--\>S. Similar to before, $R_0 = \beta /(\gamma + \mu)$
 
 ```{r}
 sirs_mod <- function(t, state, params){
@@ -319,10 +415,9 @@ This gives
 
 $R_0 = \frac{\beta}{\mu+\gamma} \frac{\sigma}{\mu+\sigma}$
 
-Basically, it's the same R0 as the SIR model, but some individuals in E die before reaching I, so they do not contribute to transmission. Usually, the second fraction is ~1 (since mu is very small compared to sigma--people's lifespan (in years) is usually longer than the time spend in latent period (often days or weeks)).
+Basically, it's the same R0 as the SIR model, but some individuals in E die before reaching I, so they do not contribute to transmission. Usually, the second fraction is \~1 (since mu is very small compared to sigma--people's lifespan (in years) is usually longer than the time spend in latent period (often days or weeks)).
 
 Although the SIR and SEIR models behave similarly at equilibrium (when the parameters are suitably rescaled), the SEIR model has a slower growth rate after pathogen invasion due to individuals needing to pass through the exposed class before they can contribute to the transmission process.
-
 
 ## carrier state
 
@@ -332,8 +427,4 @@ Although the SIR and SEIR models behave similarly at equilibrium (when the param
 
 ## Putting it all together
 
-S E I R C D N 
-Births/deaths
-Deaths late in infection
-
-
+S E I R C D N Births/deaths Deaths late in infection
