@@ -27,7 +27,7 @@ Basically, capital letters are used to represent different compartments, and dif
 
 The model equations look like this (we will derive these next):
 
-$\frac{dS}{dt} = -\beta SI $
+$\frac{dS}{dt} = -\beta SI$
 
 $\frac{dI}{dt} = \beta SI  - \gamma I$
 
@@ -37,15 +37,15 @@ $\frac{dR}{dt} = \gamma I$
 
 So for the SIR model, there are 2 terms to worry about:
 
-1.  The S-->I "transmission" term
+1.  The S--\>I "transmission" term
 
-2.  the I-->R recovery term
+2.  the I--\>R recovery term
 
 (note that R is just 1 - S - I)
 
 (2) is actually fairly straightforward. If someone is infectious for *t* period of time, then their time spend infectious is equal to $1/t = \gamma$. We call $\gamma$ the recovery rate.
 
-(1) is more complicated, but it works like this. The rate that people get infected depends on the number of contacts between susceptible and infectious people, and the per-person probability of acquiring infection, given contact (this is often called the force of infection, $\lambda$). Here's where it gets complicated.
+(3) is more complicated, but it works like this. The rate that people get infected depends on the number of contacts between susceptible and infectious people, and the per-person probability of acquiring infection, given contact (this is often called the force of infection, $\lambda$). Here's where it gets complicated.
 
 #### Density dependent and frequency dependent transmission
 
@@ -81,12 +81,11 @@ $FD: \frac{dI}{dt} = c'v\frac{I}{N}S = kv\frac{I}{N}S$
 
 If we take A to be a constant (which can be an OK assumption if we're modeling a consistent area over time), we can combine all constant terms into one:
 
-
 $DD: \frac{dI}{dt} = \beta SI$
 
 $FD: \frac{dI}{dt} = \beta' SI/N$
 
-There are some more possible complications here, but this is good for now. 
+There are some more possible complications here, but this is good for now.
 
 One note is that K&R use S, I, and R to represent proportions, and X, Y, and Z to represent the numbers of people in each compartment. In fact in their terminology we should really have these terms:
 
@@ -100,7 +99,7 @@ This may seem like overkill detail, but these details become important when popu
 
 Returning to the basic model (note this is FD). The full terms are:
 
-$\frac{dS}{dt} = -\beta SI $
+$\frac{dS}{dt} = -\beta SI$
 
 $\frac{dI}{dt} = \beta SI  - \gamma I$
 
@@ -112,11 +111,12 @@ $\gamma$ is the recovery rate, and $1/\gamma$ is the average infectious period.
 
 Note that S + I + R must = 1
 
-If we focus on $\frac{dI}{dt} = I (\beta S  - \gamma)$, some interesting things pop out. If $S(0) < \frac{\gamma}{\beta}$, dI/dt is < 0 and infection "dies out." Another way of thinking about this is that if $S(0) > \frac{\gamma}{\beta}$, the infection will grow. We can think of $\frac{\gamma}{\beta}$ as the removal rate from the infectious compartment. The inverse is called the basic reproductive ratio, $R_0 = \frac{\beta}{\gamma}$ ("R naught" or "R not"), defined as the average number of secondary cases arising from an average primary case in an entirely susceptible population. 
+If we focus on $\frac{dI}{dt} = I (\beta S  - \gamma)$, some interesting things pop out. If $S(0) < \frac{\gamma}{\beta}$, dI/dt is \< 0 and infection "dies out." Another way of thinking about this is that if $S(0) > \frac{\gamma}{\beta}$, the infection will grow. We can think of $\frac{\gamma}{\beta}$ as the removal rate from the infectious compartment. The inverse is called the basic reproductive ratio, $R_0 = \frac{\beta}{\gamma}$ ("R naught" or "R not"), defined as the average number of secondary cases arising from an average primary case in an entirely susceptible population.
 
 In a closed population, a disease can only grow if the fraction of susceptibles S is greater than $1/R_0$.
 
 We can create this model in R:
+
 ```{r sir_model}
 sirmod <- function(t, state, params){
   # pull listed inputs into environment as names variables
@@ -220,32 +220,63 @@ sir_demo_out |>
   geom_line(aes(y = I),color = "red") + 
   geom_line(aes(y = R),color = "blue")
 ```
+
 ### Endemic equilibrium
 
 What happens at equilibrium when dS = dI = dR = 0?
 
 There is a disease free equilibrium when S = 1, I = R = 0.
 
-In endemic equilibrium, we find S\* = (gamma + mu) / beta = 1/R0
+In endemic equilibrium, we find $S^*= (\gamma + \mu) / \beta = 1/R_0$ 
 
-Can plug that in to find that $I^* = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$
+"In the SIR model with births and deaths, the endemic equilibrium is characterized by the fraction of susceptibles in the population being the inverse of $R_0$."
 
-(R\* is just 1-S\* -I\* here)
+Can plug that in to find that $I^* = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$. (I think there is typo in K&R here).
 
-This requires R0 \> 1 for endemic equilibrium, otherwise the disease-free equilibrium will hold.
+($R^*$ is just $1-S^* -I^*$ here)
+
+This requires $R_0 > 1$ for endemic equilibrium, otherwise the disease-free equilibrium will hold.
 
 ```{r}
 r0 <- params["beta"] / (params["gamma"] + params["mu"])
 I_star = (params["mu"] / params["beta"]) * (r0-1)
 r0
-I_star
+I_star 
 ```
 
 ### Oscillations
 
+K&R discuss precisely *how* equilibrium is approached. It turns out is is a damped oscillator, bouncing up and down but gradually closing in on the equilibrium value. They note "the period of oscillations changes with the transmission rate ($\beta$) and the infectious period ($1/\gamma$). We note that (relative to the infectious period) the period of oscillations becomes longer as the reproductive ratio approaches one; this is also associated with a slower convergence toward the equilibrium."
+
+```{r}
+times = seq(0,60*365, by=1) 
+state = c(S = 0.1, I = 2.5e-4, R = 1-0.1-2.5e-4) # initial state values
+params = c(beta = 520/365, gamma = 1/7, mu = 1/(70*365), N = 1) # parameters
+
+sir_demo_out <- ode(y = state, t = times, func = sir_demo_mod, parms = params) |> 
+  as_tibble() |>
+  mutate(across(everything(), as.numeric))
+
+sir_demo_out |>
+  ggplot(aes(x = time, y = I)) +
+  geom_line()
+
+```
+
+There's some linear algebra involved in calculating the periods of the oscillations. But it turns out that it can be approximated as $T\approx2\pi\sqrt{AG},  A = \frac{1}{\mu(R_0-1)}, G = \frac{1}{\mu+\gamma}$.
+
+Where A is the average age at infection (more in a minute) and G determines the average period of infection.
+```{r}
+r0 <- params["beta"] / (params["gamma"] + params["mu"])
+a = 1/(params["mu"]*(r0-1))
+g = 1/(params["gamma"] + params["mu"])
+t = 2*pi*sqrt(a*g);t/365
+```
+
+
 ### Average age of infection
 
-$A \approx \frac{1}{\mu(R_0-1)}$ (from dS equation). This is basically the inverse of the average period spent in susceptible class, which is approximated by the inverse of the force of infection, $1/\beta I^*$, subbing in I\* from above.
+Basically, we start from the model equation $\frac{dS}{dt} = \mu -\beta SI  - \mu S$. If $\mu$ is small, then the average time spent in S is $1/\beta I^*$ at equilibrium. Substituting in $I^* = \frac{\mu}{\beta}(R_0 -1)$, we find that $A \approx \frac{1}{\mu(R_0-1)}$.
 
 Can rewrite this as $R_0 -1 \approx L/A$ with L=lifespan = 1/mu
 
@@ -254,11 +285,13 @@ age_infex <- 1/(params["mu"]*(r0-1))
 age_infex / 365
 ```
 
+"The mean age of (first) infection is equal to the average life expectancy of an individual divided by $R_0 −1$."
+
 ## SI models - infection induced mortality
 
-There are multiple possibilities here, and things start to get more complex.
+There are multiple possibilities here, and things start to get more complex. I  think this is an area where K&R get quite confusing and switch notation up a lot.
 
-Mainly, consider probability $\rho$ of an infected individual dying from infection before recovering or dying from other causes.
+We are going to strip the model down to just 2 compartments, S and I, and assume that the only way to leave I is through death from infection (yes this is extreme). The obvious way to do that would do be to add a mortality $m$ term to he dI equation, where $m$ is a per-capita disease induced mortality rate for infected individuals. In practice, it's easier to consider the probability $\rho$ of an infected individual dying from infection before recovering or dying from other causes.
 
 This changes the dI equation to:
 
@@ -270,27 +303,47 @@ $\frac{dI}{dt} = \beta SI   - \frac{\gamma + \mu}{1-\rho} I$
 
 Note that as $\rho$ goes to 1, R0 drops to 0 (because new infections die almost immediately).
 
-### Density dependent transmission
+This isn't so realistic for infections where you die only later in infection, but it is a good starting point.
 
-Up to now, we have been assuming S, I, and R are proportions and N = 1. Bus as N changes, the dynamics change too.
+### Mortality throughout infection
 
-Note that we can no longer assume population size is fixed. A solution to this is to incorporate a fixed birth rate $\nu$ into the dS equation.
+Up to now, we have been assuming S, I, and R are proportions and N is constant. Bus as N changes, the dynamics change too. If people are dying from infection, or being born at a different rate than they die, these assumptions need to change. We can now write
+
+$\frac{dS}{dt} = \nu -\beta SI - \mu S$
+
+However this glosses over how N is factored in. How we deal with N depends on whether we're looking at density or frequency dependent transmission. This is where things get complicated.
+
+#### Density dependent transmission
+
+(Recall that this is like getting the flu on a crowded subway car. The more people in the car, the more likely you are to get the disease)
 
 S-\>X I-\>Y R-\>Z
 
+We now have a new equation, $\frac{dN}{dt}$. In the absence of disease,
+
+$\frac{dN}{dt} = \nu - \mu N \Rightarrow N \rightarrow \nu/mu$.
+
+This gives the carrying capacity of the population. When there is no disease, N = S, and I = R = 0.
+
+The other model equations now look like:
+
 $\frac{dX}{dt} = \nu -\beta XY  - \mu X$
 
-$\frac{dY}{dt} = \beta XY   - \frac{\gamma + \mu}{1-\rho} Y$
+$\frac{dY}{dt} = \beta XY  - \frac{\gamma + \mu}{1-\rho} Y$
 
 $\frac{dZ}{dt} = \gamma Y - \mu Z$
 
-But since N can now vary, neet to consider $\beta XY$ in more detail.
+How to calculate $R_0$? Same as before. Consider the dY equation, and recall that $S=X/N$, so $X = NS$:
 
-$\frac{dN}{dt} = \nu - \mu N$, setting = 0 if no disease then $N = \nu/\mu$, the carrying capacity for the population. (disease free equilibrium solution for S\*)
+$Y(\beta X-\frac{\gamma + \mu}{1-\rho}) > 0 \Rightarrow \beta NS -\frac{\gamma + \mu}{1-\rho} > 0$
 
-Now, taking into account a correction for reduced infectivity due to disease induced mortality, and a tern for the population size, $R_0 = \frac{\beta(1-\rho)\nu}{(\mu + \gamma)\mu}$
+Rearrange to get 
 
-note now the endemic equilibrium:
+$\beta NS =\frac{\gamma + \mu}{1-\rho} \Rightarrow S^* = \frac{\gamma + \mu}{\beta N(1-\rho)}$
+
+And since $R_0 = 1/S^*$, we get $R_0 = \frac{\beta (1-\rho) \nu}{(\gamma + \mu)\mu}$ This is similar to $R_0$ we found before, but with a correction term $1-\rho$ that accounts for reduced infectivity due to disease induced mortality, and a tern for the population size.
+
+Note now the endemic equilibrium is:
 
 $X^* = \frac{\mu + \gamma}{\beta(1-\rho)} = \frac{\nu}{\mu R_0}$
 
@@ -300,11 +353,39 @@ $Z^* = \frac{\gamma}{\beta}(R_0-1)$
 
 $N^* = \frac{\nu}{\mu R_0}[1+(1-\rho)(R_0-1)]$
 
-(Skipping over the frequency dependent version here, for simplicity). The takeaway here is as follows:
+The takeaway here is: "When disease-induced mortality is added to the SIR model with density-dependent transmission, the equilibrium and stability properties simply reflect a change in parameters."
 
-When disease-induced mortality is added to the SIR model with density-dependent transmission, the equilibrium and stability properties simply reflect a change in parameters.
+#### Frequency dependent transmission
 
-When disease-induced mortality is added to the SIR model with frequency dependent transmission, the equilibrium and stability properties can change substantially, especially if the probability of mortality is high.
+Before, we were able to easily switch between the count and proportion and remove N as needed. Now since N is changing though, things get much trickier.
+
+The model equations now:
+
+$\frac{dX}{dt} = \nu -\beta XY/N  - \mu X$
+
+$\frac{dY}{dt} = \beta XY/N - \frac{\gamma + \mu}{1-\rho} Y$
+
+$\frac{dZ}{dt} = \gamma Y - \mu Z$
+
+Now, even when population size is reduced, each individual still has the same average number of contacts.
+
+You can find the equilibrium by setting the differential equations equal to 0.
+
+(I did not succeed in doing the algebra here. K&R skip over it.) They find that the endemic equilibrium is:
+
+$S^* = \frac{\gamma+\mu}{\beta(1-\rho)} = 1/R_0$
+
+$I^* = \frac{\mu}{\beta(1-\rho)}(R_0 - 1)$
+
+$N^* = \frac{\nu}{\mu}(\frac{R_0(1-\rho)}{R_0 - \rho})$
+
+Some comments:
+
+"Not surprisingly, infectious diseases with the highest mortalities ($\rho$ close to one) and largest $R_0$ have the greatest impact on the population."
+
+Although for low mortality levels both mixing assumptions lead to similar results, when the mortality is high the frequency-dependent assumption leads to the largest drop in the total population size. This is because density dependent mixing places a natural damping on transmission, such that as the population size decreases so does the contact rate between individuals, limiting disease spread and reducing disease-induced mortality.
+
+When disease-induced mortality is added to the SIR model with frequency dependent transmission, the equilibrium and stability properties can change substantially, especially if the probability of mortality is high."
 
 ### Mortality late in infection
 
