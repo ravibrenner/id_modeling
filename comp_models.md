@@ -312,17 +312,17 @@ What happens at equilibrium when dS = dI = dR = 0?
 
 There is a disease free equilibrium when S = 1, I = R = 0.
 
-In endemic equilibrium, we find $S^*= (\gamma + \mu) / \beta = 1/R_0$
+In endemic equilibrium, we find $S^{*}= (\gamma + \mu) / \beta = 1/R_0$
 
 “In the SIR model with births and deaths, the endemic equilibrium is
 characterized by the fraction of susceptibles in the population being
 the inverse of $R_0$.”
 
 Can plug that in to find that
-$I^* = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$.
+$I^{*} = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$.
 (I think there is typo in K&R here).
 
-($R^*$ is just $1-S^* -I^*$ here)
+($R^{*}$ is just $1-S^{*} -I^{*}$ here)
 
 This requires $R_0 > 1$ for endemic equilibrium, otherwise the
 disease-free equilibrium will hold.
@@ -391,8 +391,8 @@ t = 2*pi*sqrt(a*g);t/365
 
 Basically, we start from the model equation
 $\frac{dS}{dt} = \mu -\beta SI  - \mu S$. If $\mu$ is small, then the
-average time spent in S is $1/\beta I^*$ at equilibrium. Substituting in
-$I^* = \frac{\mu}{\beta}(R_0 -1)$, we find that
+average time spent in S is $1/\beta I^{*}$ at equilibrium. Substituting
+in $I^{*} = \frac{\mu}{\beta}(R_0 -1)$, we find that
 $A \approx \frac{1}{\mu(R_0-1)}$.
 
 Can rewrite this as $R_0 -1 \approx L/A$ with L=lifespan = 1/mu
@@ -479,9 +479,9 @@ $Y(\beta X-\frac{\gamma + \mu}{1-\rho}) > 0 \Rightarrow \beta NS -\frac{\gamma +
 
 Rearrange to get
 
-$\beta NS =\frac{\gamma + \mu}{1-\rho} \Rightarrow S^* = \frac{\gamma + \mu}{\beta N(1-\rho)}$
+$\beta NS =\frac{\gamma + \mu}{1-\rho} \Rightarrow S^{*} = \frac{\gamma + \mu}{\beta N(1-\rho)}$
 
-And since $R_0 = 1/S^*$, we get
+And since $R_0 = 1/S^{*}$, we get
 $R_0 = \frac{\beta (1-\rho) \nu}{(\gamma + \mu)\mu}$ This is similar to
 $R_0$ we found before, but with a correction term $1-\rho$ that accounts
 for reduced infectivity due to disease induced mortality, and a tern for
@@ -489,13 +489,13 @@ the population size.
 
 Note now the endemic equilibrium is:
 
-$X^* = \frac{\mu + \gamma}{\beta(1-\rho)} = \frac{\nu}{\mu R_0}$
+$X^{*} = \frac{\mu + \gamma}{\beta(1-\rho)} = \frac{\nu}{\mu R_0}$
 
-$Y^* = \frac{\mu}{\beta}(R_0-1)$
+$Y^{*} = \frac{\mu}{\beta}(R_0-1)$
 
-$Z^* = \frac{\gamma}{\beta}(R_0-1)$
+$Z^{*} = \frac{\gamma}{\beta}(R_0-1)$
 
-$N^* = \frac{\nu}{\mu R_0}[1+(1-\rho)(R_0-1)]$
+$N^{*} = \frac{\nu}{\mu R_0}[1+(1-\rho)(R_0-1)]$
 
 The takeaway here is: “When disease-induced mortality is added to the
 SIR model with density-dependent transmission, the equilibrium and
@@ -524,11 +524,11 @@ to 0.
 (I did not succeed in doing the algebra here. K&R skip over it.) They
 find that the endemic equilibrium is:
 
-$S^* = \frac{\gamma+\mu}{\beta(1-\rho)} = 1/R_0$
+$S^{*} = \frac{\gamma+\mu}{\beta(1-\rho)} = 1/R_0$
 
-$I^* = \frac{\mu}{\beta(1-\rho)}(R_0 - 1)$
+$I^{*} = \frac{\mu}{\beta(1-\rho)}(R_0 - 1)$
 
-$N^* = \frac{\nu}{\mu}(\frac{R_0(1-\rho)}{R_0 - \rho})$
+$N^{*} = \frac{\nu}{\mu}(\frac{R_0(1-\rho)}{R_0 - \rho})$
 
 Some comments:
 
@@ -572,9 +572,9 @@ S + I = 1
 
 Can actually solve these to find that
 
-$I^* = (1-1/R_0)$
+$I^{*} = (1-1/R_0)$
 
-$S^* = 1/R_0$
+$S^{*} = 1/R_0$
 
 $R_0 = \beta/\gamma$
 

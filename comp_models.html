@@ -3078,15 +3078,15 @@ sir_demo_out &lt;- ode(y = state, t = times, func = sir_demo_mod, parms = params
 equilibrium</h2>
 <p>What happens at equilibrium when dS = dI = dR = 0?</p>
 <p>There is a disease free equilibrium when S = 1, I = R = 0.</p>
-<p>In endemic equilibrium, we find <span class="math inline">\(S^*=
+<p>In endemic equilibrium, we find <span class="math inline">\(S^{*}=
 (\gamma + \mu) / \beta = 1/R_0\)</span></p>
 <p>“In the SIR model with births and deaths, the endemic equilibrium is
 characterized by the fraction of susceptibles in the population being
 the inverse of <span class="math inline">\(R_0\)</span>.”</p>
-<p>Can plug that in to find that <span class="math inline">\(I^* =
+<p>Can plug that in to find that <span class="math inline">\(I^{*} =
 \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0
 -1)\)</span>. (I think there is typo in K&amp;R here).</p>
-<p>(<span class="math inline">\(R^*\)</span> is just <span class="math inline">\(1-S^* -I^*\)</span> here)</p>
+<p>(<span class="math inline">\(R^{*}\)</span> is just <span class="math inline">\(1-S^{*} -I^{*}\)</span> here)</p>
 <p>This requires <span class="math inline">\(R_0 &gt; 1\)</span> for
 endemic equilibrium, otherwise the disease-free equilibrium will
 hold.</p>
@@ -3137,8 +3137,8 @@ t = 2*pi*sqrt(a*g);t/365</code></pre>
 infection</h2>
 <p>Basically, we start from the model equation <span class="math inline">\(\frac{dS}{dt} = \mu -\beta SI  - \mu S\)</span>.
 If <span class="math inline">\(\mu\)</span> is small, then the average
-time spent in S is <span class="math inline">\(1/\beta I^*\)</span> at
-equilibrium. Substituting in <span class="math inline">\(I^* =
+time spent in S is <span class="math inline">\(1/\beta I^{*}\)</span> at
+equilibrium. Substituting in <span class="math inline">\(I^{*} =
 \frac{\mu}{\beta}(R_0 -1)\)</span>, we find that <span class="math inline">\(A \approx \frac{1}{\mu(R_0-1)}\)</span>.</p>
 <p>Can rewrite this as <span class="math inline">\(R_0 -1 \approx
 L/A\)</span> with L=lifespan = 1/mu</p>
@@ -3216,21 +3216,21 @@ NS\)</span>:</p>
 0\)</span></p>
 <p>Rearrange to get</p>
 <p><span class="math inline">\(\beta NS =\frac{\gamma + \mu}{1-\rho}
-\Rightarrow S^* = \frac{\gamma + \mu}{\beta N(1-\rho)}\)</span></p>
-<p>And since <span class="math inline">\(R_0 = 1/S^*\)</span>, we get
+\Rightarrow S^{*} = \frac{\gamma + \mu}{\beta N(1-\rho)}\)</span></p>
+<p>And since <span class="math inline">\(R_0 = 1/S^{*}\)</span>, we get
 <span class="math inline">\(R_0 = \frac{\beta (1-\rho) \nu}{(\gamma +
 \mu)\mu}\)</span> This is similar to <span class="math inline">\(R_0\)</span> we found before, but with a
 correction term <span class="math inline">\(1-\rho\)</span> that
 accounts for reduced infectivity due to disease induced mortality, and a
 tern for the population size.</p>
 <p>Note now the endemic equilibrium is:</p>
-<p><span class="math inline">\(X^* = \frac{\mu + \gamma}{\beta(1-\rho)}
-= \frac{\nu}{\mu R_0}\)</span></p>
-<p><span class="math inline">\(Y^* =
+<p><span class="math inline">\(X^{*} = \frac{\mu +
+\gamma}{\beta(1-\rho)} = \frac{\nu}{\mu R_0}\)</span></p>
+<p><span class="math inline">\(Y^{*} =
 \frac{\mu}{\beta}(R_0-1)\)</span></p>
-<p><span class="math inline">\(Z^* =
+<p><span class="math inline">\(Z^{*} =
 \frac{\gamma}{\beta}(R_0-1)\)</span></p>
-<p><span class="math inline">\(N^* = \frac{\nu}{\mu
+<p><span class="math inline">\(N^{*} = \frac{\nu}{\mu
 R_0}[1+(1-\rho)(R_0-1)]\)</span></p>
 <p>The takeaway here is: “When disease-induced mortality is added to the
 SIR model with density-dependent transmission, the equilibrium and
@@ -3255,11 +3255,11 @@ the same average number of contacts.</p>
 equal to 0.</p>
 <p>(I did not succeed in doing the algebra here. K&amp;R skip over it.)
 They find that the endemic equilibrium is:</p>
-<p><span class="math inline">\(S^* = \frac{\gamma+\mu}{\beta(1-\rho)} =
-1/R_0\)</span></p>
-<p><span class="math inline">\(I^* = \frac{\mu}{\beta(1-\rho)}(R_0 -
+<p><span class="math inline">\(S^{*} = \frac{\gamma+\mu}{\beta(1-\rho)}
+= 1/R_0\)</span></p>
+<p><span class="math inline">\(I^{*} = \frac{\mu}{\beta(1-\rho)}(R_0 -
 1)\)</span></p>
-<p><span class="math inline">\(N^* =
+<p><span class="math inline">\(N^{*} =
 \frac{\nu}{\mu}(\frac{R_0(1-\rho)}{R_0 - \rho})\)</span></p>
 <p>Some comments:</p>
 <p>“Not surprisingly, infectious diseases with the highest mortalities
@@ -3301,8 +3301,8 @@ immunity)</h1>
 <p>$ = SI - I $</p>
 <p>S + I = 1</p>
 <p>Can actually solve these to find that</p>
-<p><span class="math inline">\(I^* = (1-1/R_0)\)</span></p>
-<p><span class="math inline">\(S^* = 1/R_0\)</span></p>
+<p><span class="math inline">\(I^{*} = (1-1/R_0)\)</span></p>
+<p><span class="math inline">\(S^{*} = 1/R_0\)</span></p>
 <p><span class="math inline">\(R_0 = \beta/\gamma\)</span></p>
 <p>As the equilibrium. Basically this means that for a disease that does
 not lead to long-term immunity, the disease will persis long term in the
