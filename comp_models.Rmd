@@ -321,7 +321,7 @@ S-\>X I-\>Y R-\>Z
 
 We now have a new equation, $\frac{dN}{dt}$. In the absence of disease,
 
-$\frac{dN}{dt} = \nu - \mu N \Rightarrow N \rightarrow \nu/mu$.
+$\frac{dN}{dt} = \nu - \mu N \Rightarrow N \rightarrow \nu/ \mu$.
 
 This gives the carrying capacity of the population. When there is no disease, N = S, and I = R = 0.
 
