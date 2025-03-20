@@ -1,7 +1,16 @@
 ---
 title: "Compartmental models"
 author: "Ravi Brenner"
-output: html_document
+output:
+  html_document: 
+    number_sections: true
+    df_print: paged
+    toc: true
+    toc_float: true
+    code_folding: show
+  github_document:
+    number_sections: true
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -17,11 +26,11 @@ library(tidyverse)
 library(deSolve)
 ```
 
-## Building up compartmental models
+# Building up compartmental models
 
 Unfortunately, this chapter jumps right in to some confusing terminology and derivations. I will deal with each of these issues in turn.
 
-### Model structure
+## Model structure
 
 Basically, capital letters are used to represent different compartments, and differential equations are solved to get deterministic solutions. In the most intuitive (and famous) SIR model, S = Susceptible, I = Infected/Infectious, and R = Recovered. For a closed population of size N, we assume S + I + R = N. People move from S to I and from I to R, and that's it. How fast people move from S to I depends on how many people are in S and I.
 
@@ -33,7 +42,7 @@ $\frac{dI}{dt} = \beta SI  - \gamma I$
 
 $\frac{dR}{dt} = \gamma I$
 
-### Deriving the parameters
+## Deriving the parameters
 
 So for the SIR model, there are 2 terms to worry about:
 
@@ -47,7 +56,7 @@ So for the SIR model, there are 2 terms to worry about:
 
 (3) is more complicated, but it works like this. The rate that people get infected depends on the number of contacts between susceptible and infectious people, and the per-person probability of acquiring infection, given contact (this is often called the force of infection, $\lambda$). Here's where it gets complicated.
 
-#### Density dependent and frequency dependent transmission
+### Density dependent and frequency dependent transmission
 
 I found Keeling and Rohani's explanation of this very confusing. But [this](https://parasiteecology.wordpress.com/2013/10/17/density-dependent-vs-frequency-dependent-disease-transmission/) blog post was very helpful in helping me understand.
 
@@ -95,7 +104,7 @@ $FD: \frac{dY}{dt} = \beta' XY/N = \beta SI$
 
 This may seem like overkill detail, but these details become important when population size changes (e.g. with birth and death or migration) or if we are trying to model something across a range of population sizes.
 
-## SIR model without demography
+# SIR model without demography
 
 Returning to the basic model (note this is FD). The full terms are:
 
@@ -161,7 +170,7 @@ final_size$y
 sir_out[nrow(sir_out),]
 ```
 
-### Epidemic Burnout
+## Epidemic Burnout
 
 Some interesting math here, but the point to flag is:
 
@@ -169,7 +178,7 @@ The chain of transmission eventually breaks due to the decline in infectives, no
 
 In fact, there will (almost always) remain some proportion of susceptibles who are uninfected at the end.
 
-## SIR model with demography
+# SIR model with demography
 
 Add in a mortality rate $\mu$, with average lifespan equal to $1/\mu$.
 
@@ -221,7 +230,7 @@ sir_demo_out |>
   geom_line(aes(y = R),color = "blue")
 ```
 
-### Endemic equilibrium
+## Endemic equilibrium
 
 What happens at equilibrium when dS = dI = dR = 0?
 
@@ -244,7 +253,7 @@ r0
 I_star 
 ```
 
-### Oscillations
+## Oscillations
 
 K&R discuss precisely *how* equilibrium is approached. It turns out is is a damped oscillator, bouncing up and down but gradually closing in on the equilibrium value. They note "the period of oscillations changes with the transmission rate ($\beta$) and the infectious period ($1/\gamma$). We note that (relative to the infectious period) the period of oscillations becomes longer as the reproductive ratio approaches one; this is also associated with a slower convergence toward the equilibrium."
 
@@ -274,7 +283,7 @@ t = 2*pi*sqrt(a*g);t/365
 ```
 
 
-### Average age of infection
+## Average age of infection
 
 Basically, we start from the model equation $\frac{dS}{dt} = \mu -\beta SI  - \mu S$. If $\mu$ is small, then the average time spent in S is $1/\beta I^*$ at equilibrium. Substituting in $I^* = \frac{\mu}{\beta}(R_0 -1)$, we find that $A \approx \frac{1}{\mu(R_0-1)}$.
 
@@ -287,7 +296,7 @@ age_infex / 365
 
 "The mean age of (first) infection is equal to the average life expectancy of an individual divided by $R_0 −1$."
 
-## SI models - infection induced mortality
+# SI models - infection induced mortality
 
 There are multiple possibilities here, and things start to get more complex. I  think this is an area where K&R get quite confusing and switch notation up a lot.
 
@@ -305,7 +314,7 @@ Note that as $\rho$ goes to 1, R0 drops to 0 (because new infections die almost 
 
 This isn't so realistic for infections where you die only later in infection, but it is a good starting point.
 
-### Mortality throughout infection
+## Mortality throughout infection
 
 Up to now, we have been assuming S, I, and R are proportions and N is constant. Bus as N changes, the dynamics change too. If people are dying from infection, or being born at a different rate than they die, these assumptions need to change. We can now write
 
@@ -313,7 +322,7 @@ $\frac{dS}{dt} = \nu -\beta SI - \mu S$
 
 However this glosses over how N is factored in. How we deal with N depends on whether we're looking at density or frequency dependent transmission. This is where things get complicated.
 
-#### Density dependent transmission
+### Density dependent transmission
 
 (Recall that this is like getting the flu on a crowded subway car. The more people in the car, the more likely you are to get the disease)
 
@@ -355,7 +364,7 @@ $N^* = \frac{\nu}{\mu R_0}[1+(1-\rho)(R_0-1)]$
 
 The takeaway here is: "When disease-induced mortality is added to the SIR model with density-dependent transmission, the equilibrium and stability properties simply reflect a change in parameters."
 
-#### Frequency dependent transmission
+### Frequency dependent transmission
 
 Before, we were able to easily switch between the count and proportion and remove N as needed. Now since N is changing though, things get much trickier.
 
@@ -387,7 +396,7 @@ Although for low mortality levels both mixing assumptions lead to similar result
 
 When disease-induced mortality is added to the SIR model with frequency dependent transmission, the equilibrium and stability properties can change substantially, especially if the probability of mortality is high."
 
-### Mortality late in infection
+## Mortality late in infection
 
 $\frac{dS}{dt} = \nu -\beta SI  -\mu S$
 
@@ -397,7 +406,7 @@ $\frac{dR}{dt} = (1-\rho)\gamma I - \mu R$
 
 Here, rho is the probability of an infected individual dying from the disease. Basically, they spend the entive infectious period in the I class, and then instead of moving to recovery, they are just removed from the R class as a death.
 
-## SIS model (no immunity)
+# SIS model (no immunity)
 
 \$\frac{dS}{dt} = \gamma I -\beta SI \$
 
@@ -441,7 +450,7 @@ sis_mod_out |>
   geom_line(aes(y = I),color = "red")
 ```
 
-## SIRS model - waning immunity
+# SIRS model - waning immunity
 
 $\frac{dS}{dt} = \mu +\omega R -\beta SI  -\mu S$
 
@@ -478,7 +487,7 @@ sirs_mod_out |>
   geom_line(aes(y = R),color = "blue")
 ```
 
-## SEIR model - latent period
+# SEIR model - latent period
 
 $\frac{dS}{dt} = \mu -\beta SI  -\mu S$
 
@@ -500,12 +509,12 @@ Basically, it's the same R0 as the SIR model, but some individuals in E die befo
 
 Although the SIR and SEIR models behave similarly at equilibrium (when the parameters are suitably rescaled), the SEIR model has a slower growth rate after pathogen invasion due to individuals needing to pass through the exposed class before they can contribute to the transmission process.
 
-## carrier state
+# carrier state
 
-## discrete time models
+# discrete time models
 
-## estimating parameters
+# estimating parameters
 
-## Putting it all together
+# Putting it all together
 
 S E I R C D N Births/deaths Deaths late in infection
