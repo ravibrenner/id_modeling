@@ -14,8 +14,8 @@ Ravi Brenner
   - [3.1 Endemic equilibrium](#31-endemic-equilibrium)
   - [3.2 Oscillations](#32-oscillations)
   - [3.3 Average age of infection](#33-average-age-of-infection)
-- [4 SI models - infection induced
-  mortality](#4-si-models---infection-induced-mortality)
+- [4 infection induced mortality and SI
+  models](#4-infection-induced-mortality-and-si-models)
   - [4.1 Mortality throughout
     infection](#41-mortality-throughout-infection)
     - [4.1.1 Density dependent
@@ -23,6 +23,7 @@ Ravi Brenner
     - [4.1.2 Frequency dependent
       transmission](#412-frequency-dependent-transmission)
   - [4.2 Mortality late in infection](#42-mortality-late-in-infection)
+  - [4.3 Fatal infections](#43-fatal-infections)
 - [5 SIS model (no immunity)](#5-sis-model-no-immunity)
 - [6 SIRS model - waning immunity](#6-sirs-model---waning-immunity)
 - [7 SEIR model - latent period](#7-seir-model---latent-period)
@@ -146,7 +147,7 @@ their terminology we should really have these terms:
 
 $DD: \frac{dY}{dt} = \beta XY$
 
-$FD: \frac{dY}{dt} = \beta' XY/N = \beta SI$
+$FD: \frac{dY}{dt} = \beta' XY/N$
 
 This may seem like overkill detail, but these details become important
 when population size changes (e.g. with birth and death or migration) or
@@ -408,7 +409,7 @@ age_infex / 365
 “The mean age of (first) infection is equal to the average life
 expectancy of an individual divided by $R_0 −1$.”
 
-# 4 SI models - infection induced mortality
+# 4 infection induced mortality and SI models
 
 There are multiple possibilities here, and things start to get more
 complex. I think this is an area where K&R get quite confusing and
@@ -521,14 +522,21 @@ same average number of contacts.
 You can find the equilibrium by setting the differential equations equal
 to 0.
 
-(I did not succeed in doing the algebra here. K&R skip over it.) They
-find that the endemic equilibrium is:
+(The algebra here is quite complicated. You can definitely skip over it.
+I worked through it by hand. Essentially you start by setting the
+differential equations equal to 0. Get an expression for Z in terms of
+Y, an expression for X in terms of N, and plug that in to get an
+expression for Y in terms of N. Now you have expressions for all 3
+compartments in terms of N. You can then set N = X + Y + Z and solve for
+N. Then plug that back in to find the X and Y solutions).
 
-$S^{*} = \frac{\gamma+\mu}{\beta(1-\rho)} = 1/R_0$
+The endemic equilibrium is:
 
-$I^{*} = \frac{\mu}{\beta(1-\rho)}(R_0 - 1)$
+$X^{*} = \frac{\nu(1-\rho)(\gamma + \mu)}{\mu(\beta(1-\rho)-\mu \rho - \gamma \rho)} = \frac{N}{R_0} \Rightarrow S^{*} = \frac{\gamma+\mu}{\beta(1-\rho)} = 1/R_0$
 
-$N^{*} = \frac{\nu}{\mu}(\frac{R_0(1-\rho)}{R_0 - \rho})$
+$Y^{*} = \frac{\nu \beta(1-\rho)^2-\nu(\mu + \gamma)(1-\rho)}{(\mu + \gamma)(\beta(1-\rho)-\mu \rho - \gamma \rho)}\Rightarrow I^{*} = \frac{\mu}{\beta(1-\rho)}(R_0 - 1)$
+
+$N^{*} = \frac{\beta \nu(1-\rho)^2}{\mu(\beta(1-\rho)-\mu \rho - \gamma \rho)} = \frac{\nu}{\mu}(\frac{R_0(1-\rho)}{R_0 - \rho})$
 
 Some comments:
 
@@ -549,7 +557,26 @@ dependent transmission, the equilibrium and stability properties can
 change substantially, especially if the probability of mortality is
 high.”
 
+``` r
+r0 = seq(1,20,1)
+rho = c(0.1,0.9)
+N_table <- expand_grid(r0,rho,mixing = c("fd","dd")) |>
+  mutate(n_star = if_else(mixing == "dd",(1/r0)*(1+(1-rho)*(r0-1)),r0*(1-rho)/(r0-rho)))
+
+N_table |>
+  ggplot(aes(x = r0, y = n_star, color = factor(rho),
+             linetype = factor(mixing))) + 
+  geom_line()
+```
+
+![](comp_models_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
 ## 4.2 Mortality late in infection
+
+This is more realistic if we want to consider a situation where
+mortality occurs toward the end of the infectious period. Basically
+rather than being removed from $I$ via death from infection, people are
+removed from $R$ via death from infection.
 
 $\frac{dS}{dt} = \nu -\beta SI  -\mu S$
 
@@ -558,15 +585,57 @@ $\frac{dI}{dt} = \beta SI  - (\gamma+\mu) I$
 $\frac{dR}{dt} = (1-\rho)\gamma I - \mu R$
 
 Here, rho is the probability of an infected individual dying from the
-disease. Basically, they spend the entive infectious period in the I
+disease. Basically, they spend the entire infectious period in the $I$
 class, and then instead of moving to recovery, they are just removed
-from the R class as a death.
+from the $R$ class as a death.
+
+Again here, the mode of transmission matters. for frequency-dependent
+transmission, the results will end up being fairly straightforward. For
+density-dependent transmission, the equilibrium results are more
+complicated (but can be calculated similarly to above).
+
+$X^{*} = \frac{\nu(\mu+\gamma(1-\rho))}{(\beta -\gamma \rho)\mu}, Y^{*} = \frac{\nu(\beta - \mu - \gamma)}{(\beta -\gamma \rho)(\gamma +\mu)}, R_0 = \frac{\beta \nu }{\mu(\gamma + \mu)} > 1$
+
+“The equilibrium levels of diseases that cause mortality are critically
+dependent upon whether frequency- or density-dependent transmission is
+assumed, due to the changes in the total population size that occur.
+However, we generally find that the endemic equilibrium is feasible and
+stable as long as $R_0>1$.”
+
+## 4.3 Fatal infections
+
+If infections always kill (which can sometimes be the case), we remove
+the recovered class and are left with an SI model. The mode of
+transmission (FD or DD) still matters, but the number of equations
+simplifies things considerably.
+
+For Frequency-dependent:
+
+$\frac{dX}{dt} = \nu - \beta XY/N - \mu X$
+
+$\frac{dY}{dt} = \beta XY/N - (\gamma + \mu) Y$
+
+where people remain infectious for an average period of time $1/\gamma$.
+
+You can solve to find
+
+$X^{*} = \frac{\nu}{\beta -\gamma}, Y^{*} = \frac{\nu(\beta - \gamma - \mu)}{(\beta - \gamma)(\gamma + \mu)}, R_0 = \frac{\beta}{(\mu + \gamma)} > 1$/
+
+For density dependent:
+
+$\frac{dX}{dt} = \nu - \beta XY - \mu X$
+
+$\frac{dY}{dt} = \beta XY - (\gamma + \mu) Y$
+
+You can solve to find
+
+$X^{*} = \frac{\gamma+\mu}{\beta}, Y^{*} = \frac{\nu}{(\mu + \gamma)} - \frac{\mu}{\beta}, R_0 = \frac{\beta \nu}{(\mu + \gamma)\mu} > 1$
 
 # 5 SIS model (no immunity)
 
-\$ = I -SI \$
+$\frac{dS}{dt} = \gamma I -\beta SI$
 
-\$ = SI - I \$
+$\frac{dI}{dt} = \beta SI - \gamma I$
 
 S + I = 1
 
@@ -579,9 +648,9 @@ $S^{*} = 1/R_0$
 $R_0 = \beta/\gamma$
 
 As the equilibrium. Basically this means that for a disease that does
-not lead to long-term immunity, the disease will persis long term in the
-population if R0 \> 1. Basically it will become endemic at a level
-determined by R0.
+not lead to long-term immunity, the disease will persist long term in
+the population if R0 \> 1. Basically it will become endemic at a level
+determined by $R_0$.
 
 ``` r
 sis_mod <- function(t, state, params){
@@ -609,9 +678,17 @@ sis_mod_out |>
   geom_line(aes(y = I),color = "red")
 ```
 
-![](comp_models_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](comp_models_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 # 6 SIRS model - waning immunity
+
+SIR and SIS represent 2 extremes–lifelong immunity (SIR), or lack of
+immunity (SIS). While these can be realistic for some diseases, an
+intermediate assumption is waning immunity, where immunity lasts for
+some period of time before waning. We create a waning rate $\omega$, the
+rate at which immunity is lost and R–\>S. You can imagine that when
+$\omega = 0$, you get SIR, and when $\omega \rightarrow  \infty$, you
+get SIS.
 
 $\frac{dS}{dt} = \mu +\omega R -\beta SI  -\mu S$
 
@@ -619,8 +696,7 @@ $\frac{dI}{dt} = \beta SI  - (\gamma+\mu) I$
 
 $\frac{dR}{dt} = \gamma I - \omega R -  \mu R$
 
-Where $\omega$ is the rate at which immunity is lost and individuals go
-from R–\>S. Similar to before, $R_0 = \beta /(\gamma + \mu)$
+Similar to before, $R_0 = \beta /(\gamma + \mu)$
 
 ``` r
 sirs_mod <- function(t, state, params){
@@ -649,7 +725,7 @@ sirs_mod_out |>
   geom_line(aes(y = R),color = "blue")
 ```
 
-![](comp_models_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](comp_models_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 # 7 SEIR model - latent period
 
