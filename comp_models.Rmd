@@ -499,7 +499,8 @@ sis_mod_out |>
 ```
 
 # SIRS model - waning immunity
-SIR and SIS represent 2 extremes--lifelong immunity (SIR), or lack of immunity (SIS). While these can be realistic for some diseases, an intermediate assumption is waning immunity, where immunity lasts for some period of time before waning. We create a waning rate $\omega$, the rate at which immunity is lost and R-->S. You can imagine that when $\omega = 0$, you get SIR, and when $\omega \rightarrow  \infty$, you get SIS.
+
+SIR and SIS represent 2 extremes--lifelong immunity (SIR), or lack of immunity (SIS). While these can be realistic for some diseases, an intermediate assumption is waning immunity, where immunity lasts for some period of time before waning. We create a waning rate $\omega$, the rate at which immunity is lost and $R \rightarrow S$. You can imagine that when $\omega = 0$, you get SIR, and when $\omega \rightarrow  \infty$, you get SIS.
 
 $\frac{dS}{dt} = \mu +\omega R -\beta SI  -\mu S$
 
@@ -535,6 +536,27 @@ sirs_mod_out |>
   geom_line(aes(y = I),color = "red") + 
   geom_line(aes(y = R),color = "blue")
 ```
+
+Similar to the SIR model with birth and death, the equilibrium state is approaches via damped oscillations. I am skipping over the derivation (as K&R do), but the period of oscillations is:
+
+$T = \frac{4\pi}{\sqrt{4(R_0-1)\frac{1}{G_I}\frac{1}{G_r} - (\frac{1}{G_R}-\frac{1}{A})^2}}$
+
+Where A is the average age at first infection, $A=\frac{\omega+\mu+\gamma}{(\omega+\mu)(\beta-\gamma-\mu)}$, and $G_I = \frac{1}{\gamma+\mu}$ is the average period spend infectious and $G_R=\frac{1}{\omega+\mu}$ is the average period spent recovered.
+
+The key thing here is that the rate of immunity waning $\omega$ substantially impacts the dynamics of the disease. As the waning rate increases, the prevalence of the disease increases and the period of the oscillations drops substantially.
+
+```{r}
+expand_grid(r0 = 10,
+            mu=1/(70*365), 
+            gamma = 1/10, 
+            omega = 10^seq(-4, 2,length = 1000)) |>
+  mutate(beta = r0 * (gamma + mu),
+         g_i = 1/(mu+gamma),
+         g_r = 1/(omega + mu),
+         A = (omega + mu +gamma)/((omega+mu)*(beta - gamma - mu)),
+         period = 4*pi / sqrt((4*(r0-1)*(1/g_i)*(1/g_r)) - (((1/g_r)-(1/A))^2)))
+```
+
 
 # SEIR model - latent period
 
