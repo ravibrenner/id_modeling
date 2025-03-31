@@ -515,7 +515,7 @@ sirs_mod <- function(t, state, params){
   # pull listed inputs into environment as names variables
   with(as.list(c(state,params)),{
     # define equations
-      dS = mu -omega * R -(beta * S * I ) -mu*S
+      dS = mu +omega * R -(beta * S * I ) -mu*S
       dI = (beta*S*I) - (gamma+mu)*I 
       dR = gamma*I - omega*R - mu*R
       
@@ -545,16 +545,52 @@ Where A is the average age at first infection, $A=\frac{\omega+\mu+\gamma}{(\ome
 
 The key thing here is that the rate of immunity waning $\omega$ substantially impacts the dynamics of the disease. As the waning rate increases, the prevalence of the disease increases and the period of the oscillations drops substantially.
 
+(By my math, the formula for $I^{*} = \frac{\mu(\omega+\mu)}{\omega\gamma R_0 - \beta(\omega+\mu)}(1-R_0)$)
+
 ```{r}
-expand_grid(r0 = 10,
-            mu=1/(70*365), 
-            gamma = 1/10, 
+
+times = seq(0,1000, by=1)
+state = c(S = 0.999, I = 0.001, R = 0) # initial state values
+params = c(beta = 1.000391, gamma = 1/10, N = 1, mu = 1/(70*365), omega = 0.01) # parameters
+
+sirs_mod_out <- ode(y = state, t = times, func = sirs_mod, parms = params) |> 
+  as_tibble()
+
+sirs_mod_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = I),color = "red") + 
+  geom_line(aes(y = R),color = "blue")
+
+mu = params["mu"]
+gamma = params["gamma"]
+beta = params["beta"]
+omega = params["omega"]
+r0 = beta/(gamma+mu)
+I_star = (mu*(omega+mu) / (omega*gamma*r0 - beta*(omega+mu))) * (1-r0)
+
+I_star
+sirs_mod_out$I[nrow(sirs_mod_out)]
+
+example_df <- expand_grid(r0 = 10,
+            mu=1/(70), 
+            gamma = 1/(10/365), 
             omega = 10^seq(-4, 2,length = 1000)) |>
   mutate(beta = r0 * (gamma + mu),
          g_i = 1/(mu+gamma),
          g_r = 1/(omega + mu),
          A = (omega + mu +gamma)/((omega+mu)*(beta - gamma - mu)),
-         period = 4*pi / sqrt((4*(r0-1)*(1/g_i)*(1/g_r)) - (((1/g_r)-(1/A))^2)))
+         period = 4*pi / sqrt((4*(r0-1)*(1/g_i)*(1/g_r)) - (((1/g_r)-(1/A))^2)),
+         i_star = (mu*(omega+mu) / (omega*gamma*r0 - beta*(omega+mu))) * (1-r0)) 
+
+example_df |>
+  ggplot(aes(x = log10(omega), y = log10(i_star))) +
+  geom_line()
+
+
+example_df |>
+  ggplot(aes(x = log10(omega), y = period)) +
+  geom_line()
 ```
 
 
