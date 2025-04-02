@@ -593,8 +593,9 @@ example_df |>
   geom_line()
 ```
 
-
 # SEIR model - latent period
+
+The SEIR model adds in a latent period, when individuals are infected (Exposed) but not yet Infectious (I). The model equations are:
 
 $\frac{dS}{dt} = \mu -\beta SI  -\mu S$
 
@@ -604,7 +605,7 @@ $\frac{dI}{dt} = \sigma E - (\gamma+\mu) I$
 
 $\frac{dR}{dt} = \gamma I -  \mu R$
 
-The latent period (time spent infected but not infectious) is equal to 1/sigma.
+The latent period (time spent infected but not infectious) is equal to $1/\sigma$.
 
 And assume S + E + I + R = 1 (closed cohort).
 
@@ -612,11 +613,88 @@ This gives
 
 $R_0 = \frac{\beta}{\mu+\gamma} \frac{\sigma}{\mu+\sigma}$
 
-Basically, it's the same R0 as the SIR model, but some individuals in E die before reaching I, so they do not contribute to transmission. Usually, the second fraction is \~1 (since mu is very small compared to sigma--people's lifespan (in years) is usually longer than the time spend in latent period (often days or weeks)).
+Basically, it's the same $R_0$ as the SIR model, but some individuals in E die before reaching I, so they do not contribute to transmission. Usually, the second fraction is \~1 (since mu is very small compared to sigma--people's lifespan (in years) is usually longer than the time spend in latent period (often days or weeks)).
 
-Although the SIR and SEIR models behave similarly at equilibrium (when the parameters are suitably rescaled), the SEIR model has a slower growth rate after pathogen invasion due to individuals needing to pass through the exposed class before they can contribute to the transmission process.
+The endemic equilibrium is given by:
 
-# carrier state
+$S^{*} = \frac{(\mu +\gamma)(\mu+\sigma)}{\beta\sigma} = \frac{1}{R_0}$
+
+$E^{*} = \frac{\mu(\mu+\gamma)}{\beta\sigma}(R_0 - 1)$
+
+$I^{*} = \frac{\mu}{\beta}(R_0 - 1)$
+
+The equilibrium is again approached via period oscillations, with period $T\approx2\pi\sqrt{AG}$ where $G = \frac{1}{\mu+\gamma} + \frac{1}{\mu+\sigma}$.
+
+"Although the SIR and SEIR models behave similarly at equilibrium (when the parameters are suitably rescaled), the SEIR model has a slower growth rate after pathogen invasion due to individuals needing to pass through the exposed class before they can contribute to the transmission process."
+
+```{r}
+seir_mod <- function(t, state, params){
+  # pull listed inputs into environment as names variables
+  with(as.list(c(state,params)),{
+    # define equations
+      dS = mu  -(beta * S * I ) -mu*S
+      dE = (beta*S*I) - (mu + sigma)*E
+      dI = sigma*E - (gamma+mu)*I 
+      dR = gamma*I - mu*R
+      
+      list(c(dS,dE,dI,dR))
+  })
+}
+
+times = seq(0,100, by=1) #100 days, in discrete units
+state = c(S = 0.999, E=0.001, I = 0, R = 0) # initial state values
+params = c(beta = 0.75, gamma = 1/2, N = 1, 
+           mu = 1/(70*12),sigma = 1/1) # parameters
+
+seir_mod_out <- ode(y = state, t = times, func = seir_mod, parms = params) |> 
+  as_tibble()
+
+seir_mod_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = E),color = "green") + 
+  geom_line(aes(y = I),color = "red") + 
+  geom_line(aes(y = R),color = "blue")
+
+```
+
+
+# Infections with a carrier state
+
+This is a good point to stop and acknowledge that the general framework we have seen so far for building compartmental models can be readily extended to infections with more complex biology, and can factor in multiple states not addressed so far. One example to try here is a carrier state (like hepatitis B or herpes), where chronic carriers can transmit at a low rate for a long time, even if not acutely infected.
+
+The idea here is that carriers also infect susceptibles, and newly infected people either recover or become carriers after an acute infection period.
+
+The model equations, with C as the carrier state, and $\epsilon$ as the reduced transmission rate and $q$ as the proportion of acute individuals who become carriers vs. $1-q$ who recover, and $\Gamma$ is the rate individuals go from Carrier to Recovered:
+
+$\frac{dS}{dt} = \mu - \beta SI - \epsilon\beta CS - \mu S$
+
+$\frac{dI}{dt} =  \beta SI + \epsilon\beta CS - \gamma I -\mu I$
+
+$\frac{dC}{dt} = \gamma qI - \Gamma C- \mu C$
+
+$\frac{dR}{dt} = \gamma(1-q)I +\Gamma C- \mu R$
+
+You can do similar algebra to solve for equilibrium and find $R_0$, which turns out to be
+
+$R_0= \frac{\beta}{\gamma+\mu} + \frac{q\gamma}{(\gamma+\mu)}\frac{\epsilon\beta}{(\Gamma + \mu)}$
+
+The first component of $R_0$ comes from infectious individuals, same as in earlier sections. The added term has 2 parts. The first, $q\gamma / (\gamma+\mu)$ accounts for Infectious individuals who go on to become carriers, and the second accounts for transmission from those carriers.
+
+"The value of R0 is the sum of separate components from the acutely infected and chronic carriers."
+
+The equilibrium state:
+
+$S^{*} = \frac{\gamma+\mu}{\beta  + \frac{q\gamma\epsilon\beta}{\Gamma+\mu}} = \frac{1}{R_0}$
+
+$I^{*} = \frac{\mu(1-S^{*})}{\gamma + \mu}$
+
+$C^{*} = \frac{\gamma q \mu(1-S^{*})}{(\gamma+\mu)(\Gamma+\mu)}$
+
+```{r}
+
+```
+
 
 # discrete time models
 
