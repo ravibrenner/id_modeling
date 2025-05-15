@@ -1,5 +1,5 @@
 ---
-title: "Compartmental models"
+title: "2. Compartmental models"
 author: "Ravi Brenner"
 output:
   html_document: 
