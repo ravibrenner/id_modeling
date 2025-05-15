@@ -692,14 +692,115 @@ $I^{*} = \frac{\mu(1-S^{*})}{\gamma + \mu}$
 $C^{*} = \frac{\gamma q \mu(1-S^{*})}{(\gamma+\mu)(\Gamma+\mu)}$
 
 ```{r}
+sicr_mod <- function(t, state, params){
+  # pull listed inputs into environment as names variables
+  with(as.list(c(state,params)),{
+    # define equations
+      dS = mu  -(beta * S * I) -(epsilon*beta*C*S) -mu*S
+      dI = (beta*I + epsilon*beta*C)*S - (gamma+mu)*I 
+      dC = gamma*q*I - GAMMA *C - mu*C
+      dR = gamma*(1-q)*I + GAMMA*C - mu*R
+      
+      list(c(dS,dI,dC,dR))
+  })
+}
+
+times = seq(0,100, by=1) #100 days, in discrete units
+state = c(S = 0.999, I = 0.001,C=0, R = 0) # initial state values
+params = c(beta = 0.75, gamma = 1/2, N = 1, 
+           mu = 1/(70*12),q = 0.5, GAMMA = 1/2,
+           epsilon = 0.1) # parameters
+
+sicr_mod_out <- ode(y = state, t = times, func = sicr_mod, parms = params) |> 
+  as_tibble()
+
+sicr_mod_out |>
+  ggplot(aes(x = time)) + 
+  geom_line(aes(y = S)) + 
+  geom_line(aes(y = C),color = "green") + 
+  geom_line(aes(y = I),color = "red") + 
+  geom_line(aes(y = R),color = "blue")
 
 ```
 
 
-# discrete time models
+# Discrete time models
 
-# estimating parameters
+Up until now, we have dealth with continuous differential equation models. These are convenient mathematically, assume epidemiologically that disease transmission occurs in real time, and assume real time dynamics may be important. However discrete models, assuming transmission probabilities are binomial, are also possible. K&R now introduce these models in a deterministic setting.
 
-# Putting it all together
+One key question is what a given increment of time represents. Ideally it should be in "generation length" of infection through a host, but this is sometimes difficult. Consider a disease with latent and infectious periods of exactly 1 week. We want to now the future change in the fraction in each state at a given time. We now get *difference* equations:
 
-S E I R C D N Births/deaths Deaths late in infection
+$S_{t+1} = \mu - S_t e^{-\beta I_t}$
+
+$E_{t+1} = S_t(1-e^{-\beta I_t})$
+
+$I_{t+1} = E_t$
+
+Here, $\mu$ represents *weekly* per capita births. The exponential term represents the per capita probability of *not* contracting the infection given $I_t$ infectives iwth transmission $\beta$. In statistical terms, this assumes transmission probability per susceptible follows a poisson($\beta I_t$) distribution. In this context, $\beta$ is analogous to $R_0$ for the infection.
+
+We solve for equilibrium similarly to before, setting each $S_{t+1} = S_t = S^{*}$:
+
+$S^{*} = \frac{\mu}{1-e^{-\beta \mu}}$
+
+$E^{*} = \mu$
+
+$I^* = \mu$
+
+And we require that the fraction susceptible is less than 1 ($S^{*} <1$, since we need some infectives in the population for the disease to spread). This yields:
+
+$\beta > \frac{-log(1-\mu)}{\mu}$
+
+There are some additional details in the book, concerning equilibrium states and expanding the exponential terms into polynomial terms. However K&R don't go into extensive detail, and the polynomial approach is somewhat mathematically fragile.
+
+# Parametrizing - estimating parameters
+
+In practice, we need to come up with realistic parameters for our models. For example the SIR model has 4 parameters (birth rate, natural death rate, recovery rate, transmission rate). Ideally we could get all of these from data, but in practice that may not be feasible. Generally birth and death can be estimated from pre-outbreak data, and recovery from looking at infected people only. That leaves the transmission rate, which can be calculated by measuring $R_0$ in the population.
+
+## Estimating $R_0$ from reported cases
+
+A naive approach might be to record the total number of reported cases in a given community/area. However, recall from the SIR model that:
+
+$I^{*} = \frac{\mu}{\gamma + \mu}(1-\frac{1}{R_0}) = \frac{\mu}{\beta}(R_0 -1)$
+
+If $R_0$ is much larger than 1, the effect of $R_0$ on prevalence will be relatively small. Also, some cases will go unreported.
+
+An alternative approach is to focus on the early epidemic behavior, which follows an exponential distribution:
+
+$I(t) \sim I(0) exp([R_0 - 1](\gamma + \mu)t)$
+
+Some caveats:
+
+1. This only works if there is an epidemic; not for endemic diseases
+
+2. In the early stages of an epidemic, dynamics will be very random and may have large fluctuations.
+
+3. Unless it is a new pathogen, some people will actually be immune
+
+To introduce some more terminology that will be useful, we have until now been thinking of Y(t), the prevalence at time t. However when it comes to estimating new cases, it's better to have K(T), the number of new cases reported at time point T:
+
+$K(T) = \int_{T-1}^T{\gamma I  dt}$
+
+Finally, a powerful approach is to use case reports to identify the average age at infection in an endemic situation. Since we have the equation that $A \approx 1/(\mu(R_0 - 1))$ when $R_0$ is large, we can use this to find $R_0$. The average age at infection is usually estimated as the average age of reported cases. This works very well in practice. Two limitations are:
+
+1. The age of patients may not always be recorded, so may be a challenge with historical data
+
+2. Which individual infections are reported may be biased, so age-related reporting biases may influence results.
+
+## Estimating $R_0$ from seroprevalence data
+
+Case reporting is problematic in humans because reporting can be patchy, biased, and not everyone seeks medical care. This problem is even worse for wildlife diseases. Molucular techniques can help overcome this, since we can randomly sample the population and see who was or was not infected. The limitation here is that collecting this data may be expensive and time consuming relative to routine surveillance.
+
+The simplest approach is to assume $S = 1/R_0$. So we just care about the proportion that are seronegative. The problem is that we need to make sure it's a representative sample of the whole population, especially since seroprevalence tends to increase with age.
+
+Another approach is to use the age-dependent nature of susceptibility to our advantage. Basically this involves finding the propbability an individual is susceptible at age a as $P(a) \approx exp(-a\mu(R_0 - 1))$. Then we find the $R_0$ value that maximizes the likelihood of this distribution. If a is seronegative and b is seropositive, we have:
+
+$L(R_0) = \Pi_{i=1}^n exp(-a_i \mu (R_0-1))\Pi_{i=1}^m [1-exp(-b_i\mu(R_0-1))]$
+
+Using this approach, we would want to preferentially sample from people whose age of infection we expect to be close to the average.
+
+## Estimating parameters in general
+
+The likelihood framework above can be generalized to other parameters. Ideally, we want as much data from idividual observations as possible, but this still doesn't always work for transmission characteristics. In such cases, maximum likelihood estimation is the best bet (NB: bayesian techniques may also work well here).
+
+We will return to the issue fo parameterization in another chapter.
+
