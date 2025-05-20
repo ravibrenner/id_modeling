@@ -1,0 +1,502 @@
+---
+title: "Epiverse read case data"
+author: "Ravi Brenner"
+date: "2025-05-20"
+output:
+  github_document:
+    number_sections: true
+    toc: true
+  html_document: 
+    number_sections: true
+    df_print: paged
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+Notes and code following along with some epiverse trace learning materials from https://epiverse-trace.github.io/tutorials-early/
+
+
+```{r}
+library(cleanepi)
+library(rio)
+library(here)
+library(DBI)
+library(RSQLite)
+library(dbplyr)
+library(linelist)
+library(simulist)
+library(incidence2)
+library(tracetheme)
+library(tidyverse)
+```
+
+# Reading data
+
+read ebola data using rio
+
+```{r}
+ebola_confirmed <- rio::import(here::here("data","ebola_cases_2.csv")) |>
+  as_tibble()
+```
+
+connecting to a database would look something like this
+
+```{r}
+db_connection <- DBI::dbConnect(
+  drv = RSQLite::SQLite(),
+  dbname = ":memory:"
+)
+```
+
+And writing the data to the database
+```{r}
+DBI::dbWriteTable(
+  conn = db_connection,
+  name = "cases",
+  value = ebola_confirmed
+)
+```
+
+Reading that data from the database
+```{r}
+mytable_db <- tbl(src = db_connection, "cases")
+
+mytable_db |>
+  filter(confirm > 50) |>
+  arrange(desc(confirm)) |> 
+  show_query()
+```
+
+Extract that data
+```{r}
+extracted_data <- mytable_db %>%
+  filter(confirm > 50) %>%
+  arrange(desc(confirm)) %>%
+  collect()
+```
+
+
+```{r}
+DBI::dbDisconnect(conn = db_connection)
+```
+
+# Cleaning case data
+```{r}
+raw_ebola_data <- rio::import(here("data","simulated_ebola_2.csv")) |>
+  as_tibble()
+```
+
+looking at this briefly, we have some mixed datatypes, formats, and column names that will need to be cleaned up. Many ways to do this, but will follow the tutorial.
+
+The cleanepi package will quickly scan the character columns
+```{r}
+cleanepi::scan_data(raw_ebola_data)
+```
+
+Clearly we have a few genuine character columns (gender, status, region), 2 date columns, and a numeric column. but right now they are all characters, and messy at that
+
+Standardizing column names (similar to janitor::clean_names)
+```{r}
+sim_ebola_data <- cleanepi::standardize_column_names(raw_ebola_data,
+                                                     keep = "V1")
+```
+
+Removing irregularities. duplicated rows, empty rows, or constant columns are all basically useless.
+
+remove lab and region, which all have the same value
+```{r}
+sim_ebola_data <- cleanepi::remove_constants(sim_ebola_data)
+```
+
+Remove duplicated rows
+```{r}
+sim_ebola_data <- cleanepi::remove_duplicates(sim_ebola_data)
+```
+
+Replace missing values
+```{r}
+sim_ebola_data <- cleanepi::replace_missing_values(
+  data = sim_ebola_data,
+  na_strings = ""
+)
+
+```
+
+Check subject IDs. Should be unique within the range
+```{r}
+sim_ebola_data <-
+  cleanepi::check_subject_ids(
+    data = sim_ebola_data,
+    target_columns = "case_id",
+    range = c(0, 15000)
+  )
+
+cleanepi::print_report(sim_ebola_data)
+```
+
+Standardizing dates (basically a really good wrapper for parse_date_time)
+```{r}
+sim_ebola_data <- cleanepi::standardize_dates(
+  sim_ebola_data,
+  target_columns = c(
+    "date_onset",
+    "date_sample"
+  )
+)
+```
+
+Converting numeric columns--even able to parse "seven" to 7, which is very cool
+```{r}
+sim_ebola_data <- cleanepi::convert_to_numeric(sim_ebola_data,
+  target_columns = "age"
+)
+```
+
+Epi related operations
+
+Checking date related columns
+```{r}
+cleanepi::check_date_sequence(
+  data = sim_ebola_data[1:100, ],
+  target_columns = c("date_onset", "date_sample")
+)
+```
+So in the first 100 rows, there are a number that have dates out of order
+
+Dictionary-based substitution
+We can potentially specify the values we expect to see--e.g. in the gender column
+
+```{r}
+test_dict <- base::readRDS(
+  system.file("extdata", "test_dict.RDS", package = "cleanepi")
+) %>%
+  dplyr::as_tibble() # for a simple data frame output
+
+test_dict
+
+sim_ebola_data <- cleanepi::clean_using_dictionary(
+  sim_ebola_data,
+  dictionary = test_dict
+)
+```
+
+Find time between different events
+
+Here, finding time between a given date and 1/3/2025
+```{r}
+sim_ebola_data <- cleanepi::timespan(
+  sim_ebola_data,
+  target_column = "date_sample",
+  end_date = ymd("2025-01-03"),
+  span_unit = "years",
+  span_column_name = "years_since_collection",
+  span_remainder_unit = "months"
+)
+
+sim_ebola_data |>
+  select(case_id, date_sample, years_since_collection, remainder_months)
+```
+
+Can we calculated age using this? Read in this data dictionary
+```{r}
+dat <- readRDS(
+  file = system.file("extdata", "test_df.RDS", package = "cleanepi")
+) %>%
+  dplyr::as_tibble()
+
+cleanepi::timespan(
+  dat |>
+    cleanepi::standardize_dates(),
+  target_column = "dateOfBirth",
+  end_date = ymd("2025-03-01"),
+  span_unit = "years",
+  span_column_name = "age_in_years",
+  span_remainder_unit = "months"
+) |>
+  select(study_id, dateOfBirth, age_in_years, remainder_months)
+```
+
+
+Creating a whole pipeline--very simple
+```{r}
+cleaned_data <- raw_ebola_data |>
+  standardize_column_names() |>
+  remove_constants() |>
+  remove_duplicates() |>
+  replace_missing_values(na_strings = "") |>
+  check_subject_ids(target_columns = "case_id",range = c(1,15000)) |>
+  standardize_dates(target_columns = c("date_onset","date_sample")) |>
+  convert_to_numeric(target_columns = "age") |>
+  check_date_sequence(target_columns = c("date_onset","date_sample")) |>
+  clean_using_dictionary(dictionary = test_dict) |>
+  timespan(
+    target_column = "date_sample",
+    end_date = ymd("2025-01-03"),
+    span_unit = "years",
+    span_column_name = "years_since_collection",
+    span_remainder_unit = "months"
+  )
+```
+
+Viewing the report (this is amazing!)
+```{r}
+cleanepi::print_report(cleaned_data)
+```
+
+# Validation of data
+
+Basically, they add another layer of data integrity by making the data a special "linelist" object rather than a tibble. This is done by tagging and validating the data
+
+Creating a linelist
+```{r}
+linelist_data <- linelist::make_linelist(
+  x = cleaned_data,
+  # common epi tags--others also available via tag_types
+  id = "case_id",
+  date_onset = "date_onset",
+  gender = "gender",
+  age = "age",
+  date_reporting = "date_sample",
+)
+
+linelist_data
+```
+
+
+Validation
+```{r}
+linelist::validate_linelist(linelist_data)
+```
+
+If something was wrong here (wrong datatype or a missing column), the function would tell us.
+
+Safeguarding--you'll get a warning if you drop columns
+```{r}
+new_df <- linelist_data %>%
+  dplyr::select(case_id, gender)
+```
+
+We can look into the tagged columns like this
+```{r}
+tags_df(linelist_data)
+```
+
+Note that this is best for outbreaks or mass gathering surveillance, where data may update over time. Not necessarily ideal for a research application (lathough it could be used too)
+
+# Aggregating and visualizing
+
+Creating some synthetic outbreak data using simulist
+```{r}
+set.seed(1)
+sim_data <- simulist::sim_linelist(outbreak_size = c(1000,1500)) |>
+  as_tibble()
+
+sim_data
+```
+
+We could also get real data from the outbreaks package
+```{r}
+outbreaks::covid19_england_nhscalls_2020 |> head()
+```
+
+There are some simple functions to calculate aggregates from this
+
+Incidence
+```{r}
+daily_incidence <- incidence2::incidence(
+  sim_data,
+  date_index = "date_onset",
+  interval = "day" # Aggregate by daily intervals
+)
+
+# View the incidence data
+daily_incidence
+```
+ 
+weekly incidence, by a covariate and type of case
+```{r}
+weekly_incidence <- incidence2::incidence(
+  sim_data,
+  date_index = "date_onset",
+  interval = "week", # Aggregate by weekly intervals
+  groups = c("sex", "case_type"), # Group by sex and case type
+  complete_dates = T
+)
+
+# View the incidence data
+weekly_incidence
+```
+
+biweekly
+```{r}
+biweekly_incidence <- incidence2::incidence(
+  sim_data,
+  date_index = "date_onset",
+  interval = 14,
+  groups = "case_type",
+  complete_dates = T
+) 
+biweekly_incidence
+```
+
+
+Visualizing data
+```{r}
+base::plot(daily_incidence) +
+  ggplot2::labs(
+    x = "Time (in days)", # x-axis label
+    y = "Dialy cases" # y-axis label
+  ) 
+```
+
+weekly
+```{r}
+base::plot(weekly_incidence) +
+  ggplot2::labs(
+    x = "Time (in weeks)", # x-axis label
+    y = "weekly cases" # y-axis label
+  ) 
+```
+
+Cumulative incidence
+```{r}
+# Calculate cumulative incidence
+cum_df <- incidence2::cumulate(daily_incidence)
+
+# Plot cumulative incidence data using ggplot2
+base::plot(cum_df) +
+  ggplot2::labs(
+    x = "Time (in days)", # x-axis label
+    y = "weekly cases" # y-axis label
+  ) 
+```
+
+biweekly
+```{r}
+cum_df <- incidence2::cumulate(biweekly_incidence)
+
+# Plot cumulative incidence data using ggplot2
+base::plot(cum_df) +
+  ggplot2::labs(
+    x = "Time (in days)", # x-axis label
+    y = "weekly cases" # y-axis label
+  ) 
+```
+
+Estimating peak cases
+```{r}
+peak <- incidence2::estimate_peak(
+  daily_incidence,
+  n = 100,         # Number of simulations for the peak estimation
+  alpha = 0.05,    # Significance level for the confidence interval
+  first_only = TRUE, # Return only the first peak found
+  progress = FALSE  # Disable progress messages
+)
+
+# Display the estimated peak
+peak
+```
+
+Could obviously get much fancier with the plotting, by not just using the defaults:
+```{r}
+breaks <- seq.Date(
+  from = min(as.Date(daily_incidence$date_index, na.rm = TRUE)),
+  to = max(as.Date(daily_incidence$date_index, na.rm = TRUE)),
+  by = 20 # every 20 days
+)
+
+# Create the plot
+ggplot2::ggplot(data = daily_incidence) +
+  geom_histogram(
+    mapping = aes(
+      x = as.Date(date_index),
+      y = count
+    ),
+    stat = "identity",
+    color = "blue", # bar border color
+    fill = "lightblue", # bar fill color
+    width = 1 # bar width
+  ) +
+  theme_minimal() + # apply a minimal theme for clean visuals
+  theme(
+    plot.title = element_text(face = "bold",
+                              hjust = 0.5), # center and bold title
+    plot.subtitle = element_text(hjust = 0.5), # center subtitle
+    plot.caption = element_text(face = "italic",
+                                hjust = 0), # italicized caption
+    axis.title = element_text(face = "bold"), # bold axis titles
+    axis.text.x = element_text(angle = 45, vjust = 0.5) # rotated x-axis text
+  ) +
+  labs(
+    x = "Date", # x-axis label
+    y = "Number of cases", # y-axis label
+    title = "Daily Outbreak Cases", # plot title
+    subtitle = "Epidemiological Data for the Outbreak", # plot subtitle
+    caption = "Data Source: Simulated Data" # plot caption
+  ) +
+  scale_x_date(
+    breaks = breaks, # set custom breaks on the x-axis
+    labels = scales::label_date_short() # shortened date labels
+  )
+```
+
+Or could do it grouped
+```{r}
+ggplot2::ggplot(data = weekly_incidence) +
+  geom_histogram(
+    mapping = aes(
+      x = as.Date(date_index),
+      y = count,
+      group = sex,
+      fill = sex
+    ),
+    stat = "identity"
+  ) +
+  theme_minimal() + # apply minimal theme
+  theme(
+    plot.title = element_text(face = "bold",
+                              hjust = 0.5), # bold and center the title
+    plot.subtitle = element_text(hjust = 0.5), # center the subtitle
+    plot.caption = element_text(face = "italic", hjust = 0), # italic caption
+    axis.title = element_text(face = "bold"), # bold axis labels
+    axis.text.x = element_text(angle = 45,
+                               vjust = 0.5) # rotate x-axis text for readability
+  ) +
+  labs(
+    x = "Date", # x-axis label
+    y = "Number of cases", # y-axis label
+    title = "Daily Outbreak Cases by Sex", # plot title
+    subtitle = "Incidence of Cases Grouped by Sex", # plot subtitle
+    caption = "Data Source: Simulated Data" # caption for additional context
+  ) +
+  facet_wrap(~sex) + # create separate panels by sex
+  scale_x_date(
+    breaks = breaks, # set custom date breaks
+    labels = scales::label_date_short() # short date format for x-axis labels
+  ) +
+  scale_fill_manual(values = c("lightblue",
+                               "lightpink")) # custom fill colors for sex
+```
+
+Pretty basic overall
+
+# Recap
+
+- Learned to import with rio, DBI, and here
+
+- cleaned up data with cleanepi, which is very useful
+
+- created and tagged a linelist, validated
+
+- Simulated a linelist with simulist
+
+- Easily aggregated case data using incidence2
+
+Generally speaking, I could see these all being useful, especially when time is of the essence. Some of the data cleaning tasks may be better left to traditional tidyverse cleaning methods, in case things are more complicated than they are here. But these are good additional tools to be able to pull out when needed.

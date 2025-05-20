@@ -1,0 +1,39 @@
+---
+title: "Epiverse Real time analysis"
+author: "Ravi Brenner"
+date: "2025-05-20"
+output:
+  github_document:
+    number_sections: true
+    toc: true
+  html_document: 
+    number_sections: true
+    df_print: paged
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+Notes and code following along with some epiverse trace learning materials from https://epiverse-trace.github.io/tutorials-middle/
+
+# Access delay distributions
+
+# quantifying transmission
+
+# Use delay distributions in analysis
+
+# Create short term forecast
+
+# Estimation of outbreak severity
+
+# Account for superspreading
+
+# Simulate transmission chains
+
+

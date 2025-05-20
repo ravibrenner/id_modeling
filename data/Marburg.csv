@@ -1,0 +1,46 @@
+ID,Pathogen,Country,Country_ISO3,Case_status,Confirmation_method,Healthcare_worker,Occupation,Gender,Age,Date_onset,Date_onset_estimated,Outcome,Date_of_first_consult,Date_death,Date_recovered,Location_Province,Location_District,Contact_with_case,Source,Date_entry,Data_up_to
+1,Marburg,Equatorial Guinea,GNQ,probable,,,Taxi Driver,male,30-34,NK,2023-01-06,death,NK,2023-01-12,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+2,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,35-39,NK,2023-01-08,death,2023-01-01,2023-01-14,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+3,Marburg,Equatorial Guinea,GNQ,probable,,,Village chief,male,55-59,2023-01-01,2023-01-01,death,2023-01-08,2023-01-08,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+4,Marburg,Equatorial Guinea,GNQ,probable,,,Cashier,female,45-49,NK,2023-01-02,death,NK,2023-01-08,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+5,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,50-54,2023-01-NA,2023-01-01,death,NK,2023-01-07,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+6,Marburg,Equatorial Guinea,GNQ,discarded,,,NK,female,15-119,NK,,alive,NK,NK,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+7,Marburg,Equatorial Guinea,GNQ,probable,,Y,Ambulance Driver,male,50-54,2023-01-15,2023-01-15,death,2023-01-18,2023-01-24,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+8,Marburg,Equatorial Guinea,GNQ,discarded,A blood sample is collected and can be used for serological tests.,,NK,female,40-44,2023-01-22,2023-01-22,alive,2023-01-23,NK,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+9,Marburg,Equatorial Guinea,GNQ,probable,,,NK,male,20-24,2023-02-01,2023-02-01,death,NK,2023-02-07,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+10,Marburg,Equatorial Guinea,GNQ,probable,,,NK,male,55-59,NK,2023-01-31,death,2023-02-06,2023-02-06,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+11,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,45-49,2023-02-01,2023-02-01,death,NK,2023-02-06,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+12,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,50-54,2023-02-03,2023-02-03,death,2023-02-08,2023-02-08,,Kie-Ntem,Ebibeyin,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+13,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,male,50-54,2023-02-03,2023-02-03,death,2023-02-09,2023-02-10,,Kie-Ntem,Ebibeyin,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+14,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,15-119,NK,2023-03-10,death,2023-03-14,NK,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+15,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,15-119,NK,,death,NK,2023-02-NA,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+16,Marburg,Equatorial Guinea,GNQ,probable,,,Healer,male,30-34,NK,2023-02-08,death,NK,2023-02-14,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+17,Marburg,Equatorial Guinea,GNQ,discarded,,,Healer,female,15-119,2023-02-15,2023-02-15,alive,NK,NK,,Kie-Ntem,Nsoc Nsomo,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+18,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,40-44,2023-03-03,2023-03-03,death,NK,2023-03-12,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+19,Marburg,Equatorial Guinea,GNQ,probable,,,NK,NK,NK,NK,,NA,NK,NK,,NK,NK,NK,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,,2023-03-21
+20,Marburg,Equatorial Guinea,GNQ,probable,,,NK,male,0-4,2023-02-26,2023-02-26,death,NK,2023-02-28,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+21,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,55-59,2023-03-13,2023-03-13,death,NK,2023-03-14,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+22,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,60-64,2023-03-13,2023-03-13,death,NK,2023-03-14,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+23,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,female,35-39,2023-03-08,2023-03-08,death,2023-03-15,2023-03-18,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+24,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,female,45-49,NK,2023-03-13,death,2023-03-16,2023-03-19,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+25,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,female,10-14,NK,2023-03-13,recovered,2023-03-17,NA,2023-03-28,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+26,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,male,45-49,2023-03-02,2023-03-02,death,2023-03-16,2023-03-20,,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+27,Marburg,Equatorial Guinea,GNQ,probable,,,NK,female,30-34,2023-02-01,2023-02-01,death,2023-02-07,2023-02-07,,Kie-Ntem,Ebibeyin,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+28,Marburg,Equatorial Guinea,GNQ,probable,,,NK,male,0-4,2023-02-03,2023-02-03,death,NK,2023-02-07,,Kie-Ntem,Ebibeyin,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+29,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,female,80-84,2023-02-20,2023-02-20,death,2023-02-20,2023-02-25,,Kie-Ntem,Ebibeyin,Y,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+30,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,Y,health worker,female,30-34,2023-03-09,2023-03-09,death,2023-03-10,2023-03-19,,Centro Sur,Evinayong,NK,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+31,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,Y,health worker,male,NK,2023-03-08,2023-03-08,death,2023-03-12,2023-03-18,,Centro Sur,Evinayong,NK,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+32,Marburg,Equatorial Guinea,GNQ,confirmed,RT-PCR,,NK,NK,NK,NK,,NK,NK,NK,,Kie-Ntem,Ebibeyin,NK,https://www.guineasalud.org/archivos/Ordenes/Comunicado3.pdf,2023-03-29,2023-03-21
+33,Marburg,Equatorial Guinea,GNQ,confirmed,,,NK,NK,NK,NK,2023-03-22,death,NK,2023-03-28,,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Informes/Informe02042023.pdf,2023-04-03,2023-04-02
+34,Marburg,Equatorial Guinea,GNQ,confirmed,,,NK,NK,NK,NK,2023-03-22,death,NK,2023-03-28,,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Informes/Informe02042023.pdf,2023-04-03,2023-04-02
+35,Marburg,Equatorial Guinea,GNQ,confirmed,,Y,"Healthcare
+Professional",NK,NK,NK,,recovered,NK,NK,2023-04-10,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Informes/Informe02042023.pdf,2023-04-03,2023-04-02
+36,Marburg,Equatorial Guinea,GNQ,confirmed,,Y,"Healthcare
+Professional",NK,NK,NK,,recovered,NK,NK,2023-04-10,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Informes/Informe02042023.pdf,2023-04-03,2023-04-02
+37,Marburg,Equatorial Guinea,GNQ,confirmed,,,NK,NK,NK,NK,2023-03-27,death,NK,2023-04-02,,Wele-Nzas,Nsork,NK,https://www.guineasalud.org/archivos/Informes/Informe02042023.pdf,2023-04-03,2023-04-02
+38,Marburg,Equatorial Guinea,GNQ,confirmed,,,NK,female,0-14,NK,2023-04-04,death,NK,2023-04-10,,Litoral,Bata,NK,https://www.guineasalud.org/archivos/Informes/Informe10042023.pdf,2023-04-11,2023-04-10
+39,Marburg,Equatorial Guinea,GNQ,confirmed,,Y,Health Worker,male,25-29,2023-04-16,2023-04-16,recovered,NK,,2023-04-26,Litoral,Bata,Y,https://www.who.int/director-general/speeches/detail/who-director-general-s-opening-remarks-at-media-briefing-18-april-2023,2023-04-18,2023-04-18
+40,Marburg,Equatorial Guinea,GNQ,confirmed,,,NK,female,0-4,NK,2023-04-15,death,NK,2023-04-21,,Litoral,Bata,Y,https://www.guineasalud.org/archivos/Informes/Informe21042023.pdf,2023-04-23,
+41,Marburg,Equatorial Guinea,GNQ,probable,,,NK,NK,NK,NK,2023-04-05,death,FALSE,2023-04-11,,NK,NK,NK,https://www.who.int/emergencies/disease-outbreak-news/item/2023-DON459,2023-04-24,2023-04-11
+42,Marburg,Equatorial Guinea,GNQ,probable,,,NK,NK,NK,NK,2023-04-05,death,FALSE,2023-04-11,,NK,NK,NK,https://www.who.int/emergencies/disease-outbreak-news/item/2023-DON459,2023-04-24,2023-04-11
+43,Marburg,Equatorial Guinea,GNQ,probable,,,NK,NK,NK,NK,2023-04-05,death,FALSE,2023-04-11,,NK,NK,NK,https://www.who.int/emergencies/disease-outbreak-news/item/2023-DON459,2023-04-24,2023-04-11
