@@ -1,0 +1,82 @@
+---
+title: "3. Compartmental models with Heterogeneity"
+author: "Ravi Brenner"
+date: "2025-05-20"
+output:
+  github_document:
+    number_sections: true
+    toc: true
+  html_document: 
+    number_sections: true
+    df_print: paged
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+Notes and code following chapter 3 of Modeling Infectious Diseases in Humans and Animals by Matt J. Keeling and Pejman Rohani.
+
+```{r}
+library(tidyverse)
+library(deSolve)
+```
+
+The motivating examples here are age (e.g. for childhood infections) and risk structure (e.g. for STIs). The risk of contact and infection is not uniform across the population.
+
+For many diseases, a high $R_0$ means that average age at first infection is low (like chickenpox), and therefore they are usually encountered by children. In this context, the nature of contacts is very important--adults are likely not to have disease, but children may have siblings, schoolmates, and caretakers with children that may all factor into contact patterns. For STIs, the *number* of sexual contacts is the key variable. We will consider both of these in turn.
+
+# Risk structure: STIs
+
+## Modeling Risk structure
+
+Essentially, we will start with equations from basic compartmental models, and stratify it further by high/low risk.
+
+### High and low risk groups
+
+Using an SI model framework, with H and L indicating high and low risk groups. We define $\beta_{HH}$ as transmission from high risk to high risk, and $\beta_{HL}$ as transmission from high risk to low risk, we get:
+
+$\frac{dI_h}{dt} = \beta_{HH} S_H I_H + \beta_{HL} S_H I_L -\gamma I_H$
+
+$\frac{dI_L}{dt} = \beta_{LH} S_L I_H  + \beta_{LL} S_L I_L -\gamma I_L$
+
+Or we can define it in matrix terms, with:
+
+$\vec\beta = \pmatrix{\beta_{HH} & \beta_{HL}\\ \beta_{LH} & \beta_{LL}}$
+
+This matrix is often called "WAIFW" = Who acquires infection from whom. The first letter is "from", and the second letter is "to".
+
+Since individuals in high risk are at a higher risk of infection, $\beta_{HH} + \beta_{HL} >\beta_{LH} + \beta_{LL}$. We would expect some assortative mixing, where high risk individuals preferentially mix with high risk, so the diagonals should be larger, with the first term (HH) being the largest. Also, since the contact rates should be symmetric, $\beta_{HL} = \beta_{LH}$.
+
+"The single transmission parameter in the unstructured models is replaced by amatrix of values for structured models. In general, when all groups have an equal response to infection challenge, this matrix is symmetric"
+
+### Initial dynamics
+
+The initial dynamics are actually relatively straightforward. To find $R_0$, which is usually just $\beta/\gamma$, you just take the weighted sum of the betas based on the risk groups, to get $R_0$ values for each risk group. This means that you need to know the size of the risk groups, or their proportions, in addition to the beta matrix. 
+
+There are some additional factors that go into calculating $R_0$ for the whole population. Generally it will be in between the values calculated for each group, but if greater than a simple weighted average if the WAIFW matrix is assortative. Eigenvalues are needed to deal with that.
+
+A new definition of $R_0$ would be "the average number of secondary cases arising from an average infected individual in an entirely susceptible population, once initial transients have decayed." Basically all this is saying is that the very early distribution of cases may happen by chance, so we wait for that period to pass before determining the weighted $R_0$ for the whole population.
+
+
+"The basic reproductive ratio for the entire population is bounded by values for individuals in each group.
+
+The basic reproductive ratio from structured models is generally larger than if the structures were ignored and all individuals had the same average transmission rates.
+
+The basic reproductive ratio is found using an eigenvalue approach."
+
+Taken together, the big takeaway for structured models is that the initial behavior depends on the initial conditions, not just $R_0$ itself.
+
+### Equilibrium prevalence
+
+
+# Age structure: childhood infections
+
+## Basic methodology
+
+# Dependence on time since infection
