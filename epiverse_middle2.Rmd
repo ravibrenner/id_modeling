@@ -20,9 +20,118 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
-Notes and code following along with some epiverse trace learning materials from https://epiverse-trace.github.io/tutorials-middle/
+Notes and code following along with some epiverse trace learning materials from <https://epiverse-trace.github.io/tutorials-middle/>
+
+```{r}
+library(EpiNow2)
+library(epiparameter)
+library(incidence2)
+library(tidyverse)
+library(cfr)
+library(outbreaks)
+library(epicontacts)
+library(fitdistrplus)
+library(superspreading)
+library(epichains)
+```
 
 # Access delay distributions
+
+First, a helpful reference image regarding natural history of infectious diseases:
+
+![](time-periods.jpg){width="510"}
+
+The key thing is that there are two timelines. There's the yellow/red symptom timeline, and the green/blue infection timeline. Theses sometimes line up but not always.
+
+the epiparameter package provides easy access to specific epidemiologic parametesr for different diseases, gathered from past literature. This is very convenient! Although depending on the analysis literature review would still be needed.
+
+## The problem:
+
+Estimate transmissibility of an infection. The EpiNow2 package (similar to EpiEstim) will estimate reproduction number based on case data, accounting for when people were infected, and delays in observed data. For example to get the generation time as a probability distribution (gamma dist with mean 4 and sd 2):
+```{r}
+generation_time <- EpiNow2::Gamma(mean = 4, sd = 2, max = 20)
+```
+
+If you have the parameters this is fine. but epiparameters simplifies the process a bit. For example we can access the generation time for COVID-19 by first accessing the database:
+
+```{r}
+epiparameter::epiparameter_db(epi_name = "generation")
+```
+
+There appears not to be a generation time for COVID-19. Could we use serial interval instead?
+
+## Generation time vs. serial interval
+
+We can often approximate the generation time (time between actual infections) using the serial interval (time between onset of symptoms in 2 cases), which is easier to observe. However this approximation is most appropriate when infectiousness tarts after symptom onset. In cases where infectiousness occurs before symptoms (e.g. covid) the serial interval can be negative.
+
+If you have data on many of these delays, you can construct a probability distribution that best fits the data, rather than just focusing on the mean. The mean of the distribution could still be helpful though--a disease with a shorter mean serial interval will, all else equal, be harder to control
+
+## choosing epi parameters
+
+get the serial interval for covid
+```{r}
+epiparameter::epiparameter_db(disease = "covid",
+                              epi_name = "serial") |>
+  epiparameter::parameter_tbl()
+
+distribution <- 
+  epiparameter::epiparameter_db(disease = "covid",
+                              epi_name = "serial")
+
+distribution[[1]]$metadata$inference_method
+distribution[[2]]$metadata
+```
+
+Selecting a single distribution
+```{r}
+epiparameter::epiparameter_db(disease = "covid",
+                              epi_name = "serial",
+                              author = "Nishiura",
+                              subset = sample_size > 10) |>
+  epiparameter::parameter_tbl()
+
+covid_serialint <- 
+  epiparameter::epiparameter_db(disease = "covid",
+                              epi_name = "serial",
+                              single_epiparameter = T) 
+```
+
+Plot this dist
+```{r}
+plot(covid_serialint,cumulative = F)
+```
+
+get summary stats
+```{r}
+covid_serialint$summary_stats$mean
+```
+
+Now we can plug those values into EpiNow2
+```{r}
+generation_time <- 
+  EpiNow2::LogNormal(
+    mean = covid_serialint$summary_stats$mean, # replaced!
+    sd = covid_serialint$summary_stats$sd, # replaced!
+    max = 20
+  )
+```
+
+So we have successfully used the serial interval to estimate that generation time!
+
+We can briefly try this for ebola too
+```{r}
+ebola_serial <- 
+  epiparameter::epiparameter_db(disease = "ebola",
+                              epi_name = "serial",
+                              single_epiparameter = T) 
+
+ebola_serial$summary_stats$sd
+ebola_serial
+```
+
+A potentially useful shiny app for exploring distributions: https://ben18785.shinyapps.io/distribution-zoo/
+
+
 
 # quantifying transmission
 
@@ -35,5 +144,3 @@ Notes and code following along with some epiverse trace learning materials from 
 # Account for superspreading
 
 # Simulate transmission chains
-
-
